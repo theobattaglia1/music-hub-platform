@@ -38,7 +38,7 @@
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="glassmorphic rounded-xl p-6">
+      <div class="stats-card">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-dark-400 text-sm font-medium">Total Artists</p>
