@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="app-container">
+  <div id="app">
     <!-- Loading Screen -->
     <div
       v-if="!authStore.isInitialized"
@@ -12,33 +12,35 @@
     </div>
 
     <!-- Main Application -->
-    <div v-else-if="authStore.isAuthenticated" class="app-layout">
+    <div v-else-if="authStore.isAuthenticated" class="app-container">
       <!-- Sidebar Navigation -->
       <aside class="sidebar">
         <div class="sidebar-content">
           <!-- Logo/Brand -->
           <div class="sidebar-header">
-            <div class="flex items-center space-x-3">
-              <div class="brand-icon">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.1.9 2 2 2s2-.9 2-2M9 19c0-1.1-.9-2-2-2s-2 .9-2 2M21 19c0 1.1-.9 2-2 2s-2-.9-2-2M21 19c0-1.1.9-2.1-2-2s-2 .9-2 2"/>
-                </svg>
-              </div>
-              <div>
-                <h1 class="sidebar-title">Music Hub</h1>
-                <p class="sidebar-subtitle">Creative Platform</p>
-              </div>
+            <div class="app-logo">
+              <svg
+                class="logo-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" fill="currentColor" />
+                <path d="M10 16.5v-9l6 4.5-6 4.5z" fill="white" />
+              </svg>
+              <span class="logo-text">Music Hub</span>
             </div>
 
             <!-- Preferences Gear -->
             <button
               @click="showPreferences = true"
-              class="preferences-btn"
+              class="prefs-toggle-btn"
               title="Preferences"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"
+                />
               </svg>
             </button>
           </div>
@@ -52,10 +54,10 @@
                 class="nav-item"
                 :class="{ 'active': $route.path === '/dashboard' }"
               >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
-                <span>Dashboard</span>
+                <span>Home</span>
               </router-link>
 
               <router-link
@@ -63,8 +65,8 @@
                 class="nav-item"
                 :class="{ 'active': $route.path.startsWith('/artists') }"
               >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                 </svg>
                 <span>Artists</span>
               </router-link>
@@ -74,10 +76,10 @@
                 class="nav-item"
                 :class="{ 'active': $route.path === '/media' }"
               >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
                 </svg>
-                <span>Media Library</span>
+                <span>Playlists</span>
               </router-link>
 
               <router-link
@@ -85,17 +87,51 @@
                 class="nav-item"
                 :class="{ 'active': $route.path === '/calendar' }"
               >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v16a2 2 0 002 2z"/>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
                 </svg>
                 <span>Calendar</span>
               </router-link>
             </div>
 
+            <!-- Library Section -->
+            <div class="nav-section">
+              <div class="nav-section-header">
+                <h3>LIBRARY</h3>
+                <button
+                  @click="showCreateArtistModal = true"
+                  v-if="authStore.canCreateArtist"
+                  class="add-btn"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="nav-items">
+                <div class="nav-item">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                  </svg>
+                  <span>All Songs</span>
+                  <span class="item-count">{{ stats.totalSongs || 0 }}</span>
+                </div>
+
+                <div class="nav-item">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
+                  <span>Artists</span>
+                  <span class="item-count">{{ stats.totalArtists || 0 }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Recent Artists Section -->
             <div class="nav-section">
               <div class="nav-section-header">
-                <h3>Recent Artists</h3>
+                <h3>RECENT ARTISTS</h3>
               </div>
 
               <div v-if="recentArtists.length === 0" class="nav-empty-state">
@@ -110,7 +146,15 @@
                   class="nav-item artist-nav-item"
                 >
                   <div class="artist-avatar">
-                    {{ artist.name.charAt(0) }}
+                    <img
+                      v-if="artist.avatar_url"
+                      :src="artist.avatar_url"
+                      :alt="artist.name"
+                      class="avatar-image"
+                    />
+                    <span v-else class="avatar-initial">
+                      {{ artist.name.charAt(0) }}
+                    </span>
                   </div>
                   <span class="truncate">{{ artist.name }}</span>
                 </router-link>
@@ -120,7 +164,7 @@
 
           <!-- User Section -->
           <div class="sidebar-footer">
-            <div class="user-info">
+            <div class="user-info" @click="showUserMenu = !showUserMenu">
               <div class="user-avatar">
                 <img
                   v-if="authStore.userAvatar"
@@ -136,10 +180,7 @@
                 <p class="user-name">{{ authStore.userName }}</p>
                 <p class="user-email">{{ authStore.userEmail }}</p>
               </div>
-              <button
-                @click="showUserMenu = !showUserMenu"
-                class="user-menu-btn"
-              >
+              <button class="user-menu-btn">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
                 </svg>
@@ -157,20 +198,25 @@
                   class="context-menu-item"
                   @click="showUserMenu = false"
                 >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
                   Profile Settings
                 </router-link>
-                <router-link
-                  to="/preferences"
-                  class="context-menu-item"
-                  @click="showUserMenu = false"
-                >
+                <div class="context-menu-item" @click="showPreferences = true; showUserMenu = false">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+                  </svg>
                   Preferences
-                </router-link>
+                </div>
                 <hr class="menu-divider">
                 <button
                   @click="handleSignOut"
                   class="context-menu-item danger"
                 >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                  </svg>
                   Sign Out
                 </button>
               </div>
@@ -181,40 +227,8 @@
 
       <!-- Main Content Area -->
       <main class="main-content">
-        <!-- Top Navigation Bar -->
-        <header class="view-header">
-          <div class="header-content">
-            <div class="header-left">
-              <h2 class="view-title">{{ getPageTitle() }}</h2>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="header-actions">
-              <!-- Search -->
-              <div class="search-container">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  class="search-input"
-                />
-                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-              </div>
-
-              <!-- Notifications -->
-              <button class="notification-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.07 14C10.41 13.62 10.74 13.08 11 12.5v-.5L9 10h2l2 2h2l-2-2h2l-2-2V6l-4-4H7z"/>
-                </svg>
-                <span class="notification-badge"></span>
-              </button>
-            </div>
-          </div>
-        </header>
-
         <!-- Page Content -->
-        <div class="page-content">
+        <div class="content-scroll">
           <router-view />
         </div>
       </main>
@@ -224,6 +238,19 @@
     <div v-else class="auth-container">
       <router-view />
     </div>
+
+    <!-- Create Artist Modal -->
+    <CreateArtistModal
+      v-if="showCreateArtistModal"
+      @close="showCreateArtistModal = false"
+      @created="handleArtistCreated"
+    />
+
+    <!-- Preferences Modal -->
+    <PreferencesModal
+      v-if="showPreferences"
+      @close="showPreferences = false"
+    />
 
     <!-- Click outside to close user menu -->
     <div
@@ -235,39 +262,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
+import CreateArtistModal from '@/components/modals/CreateArtistModal.vue'
+import PreferencesModal from '@/components/PreferencesModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const dashboardStore = useDashboardStore()
 
 // Local state
 const showUserMenu = ref(false)
 const showPreferences = ref(false)
-
-// Recent artists (placeholder - will be implemented later)
-const recentArtists = ref([])
+const showCreateArtistModal = ref(false)
 
 // Computed
-const getPageTitle = () => {
-  const titles = {
-    '/dashboard': 'Dashboard',
-    '/artists': 'Artists',
-    '/media': 'Media Library',
-    '/calendar': 'Calendar',
-    '/profile': 'Profile Settings',
-    '/preferences': 'Preferences'
-  }
-
-  // Check for dynamic routes
-  if (route.path.startsWith('/artists/')) {
-    return 'Artist Workspace'
-  }
-
-  return titles[route.path] || 'Music Hub'
-}
+const recentArtists = computed(() => dashboardStore.recentArtists)
+const stats = computed(() => dashboardStore.stats)
 
 // Methods
 const handleSignOut = async () => {
@@ -275,9 +289,24 @@ const handleSignOut = async () => {
   await authStore.signOut()
 }
 
+const handleArtistCreated = async (artistData, avatarFile) => {
+  try {
+    const artist = await dashboardStore.createArtist(artistData, avatarFile)
+    showCreateArtistModal.value = false
+    router.push(`/artists/${artist.slug}`)
+  } catch (error) {
+    console.error('Failed to create artist:', error)
+  }
+}
+
 // Initialize auth on mount
 onMounted(async () => {
   await authStore.initialize()
+
+  // Load dashboard data for sidebar
+  if (authStore.isAuthenticated) {
+    dashboardStore.loadDashboardData()
+  }
 
   // Redirect to login if not authenticated
   if (!authStore.isAuthenticated && !route.path.startsWith('/auth')) {
@@ -285,377 +314,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-/* App Container */
-.app-container {
-  width: 100vw;
-  height: 100vh;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  overflow: hidden;
-}
-
-.app-layout {
-  display: flex;
-  height: 100vh;
-}
-
-/* Sidebar Styling */
-.sidebar {
-  width: 280px;
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(var(--blur-amount));
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.sidebar-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 0;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.brand-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--brand-color), var(--accent-color));
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.sidebar-subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.preferences-btn {
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.preferences-btn:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
-}
-
-/* Navigation */
-.sidebar-nav {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-}
-
-.nav-section {
-  margin-bottom: 32px;
-}
-
-.nav-section-header {
-  margin-bottom: 12px;
-}
-
-.nav-section-header h3 {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0;
-  padding: 0 12px;
-}
-
-.nav-items {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.nav-empty-state {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 0 12px;
-}
-
-.artist-nav-item {
-  font-size: 13px;
-}
-
-.artist-avatar {
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, var(--brand-color), var(--accent-color));
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  margin-right: 12px;
-}
-
-/* Sidebar Footer */
-.sidebar-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  position: relative;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-color), var(--accent-color));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-initial {
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-}
-
-.user-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-email {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-menu-btn {
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.user-menu-btn:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
-}
-
-.user-dropdown {
-  position: absolute;
-  bottom: 100%;
-  left: 16px;
-  right: 16px;
-  margin-bottom: 8px;
-  z-index: 100;
-}
-
-.menu-divider {
-  margin: 4px 0;
-  border: none;
-  border-top: 1px solid var(--border-color);
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.view-header {
-  background: rgba(18, 18, 18, 0.8);
-  backdrop-filter: blur(var(--blur-amount));
-  border-bottom: 1px solid var(--border-color);
-  padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
-}
-
-.header-left {
-  flex: 1;
-}
-
-.view-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.search-container {
-  position: relative;
-}
-
-.search-input {
-  width: 280px;
-  padding: 8px 16px 8px 40px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.search-input::placeholder {
-  color: var(--text-muted);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--brand-color);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: var(--text-muted);
-}
-
-.notification-btn {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.notification-btn:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
-}
-
-.notification-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 6px;
-  height: 6px;
-  background: var(--accent-color);
-  border-radius: 50%;
-}
-
-.page-content {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--bg-primary);
-}
-
-.auth-container {
-  width: 100vw;
-  height: 100vh;
-  background: var(--bg-primary);
-}
-
-.menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-}
-
-/* SVG Icons */
-svg {
-  width: 18px;
-  height: 18px;
-}
-
-.notification-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.search-icon {
-  width: 16px !important;
-  height: 16px !important;
-}
-</style>
