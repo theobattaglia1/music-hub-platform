@@ -114,6 +114,36 @@ const routes = [
     component: PreferencesView,
     meta: { requiresAuth: true }
   },
+  {
+    path: '/media-library',
+    name: 'media-library',
+    component: () => import('../views/MediaLibraryView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/songs',
+    name: 'songs',
+    component: () => import('../views/SongsLibraryView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/playlists',
+    name: 'playlists',
+    component: () => import('../views/PlaylistsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/playlists/:id',
+    name: 'playlist-detail',
+    component: () => import('../views/PlaylistDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/calendar',
+    name: 'calendar',
+    component: () => import('../views/CalendarView.vue'),
+    meta: { requiresAuth: true }
+  },
 
   // 404 catch all
   {

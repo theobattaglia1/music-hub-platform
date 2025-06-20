@@ -76,6 +76,7 @@ html, body {
   flex-shrink: 0;
   position: relative;
   height: 100%;
+  z-index: 10;
 }
 
 .sidebar-content {
@@ -83,6 +84,8 @@ html, body {
   flex-direction: column;
   height: 100%;
   position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 .sidebar-header {
@@ -90,19 +93,49 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 2;
 }
 
 .app-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: #fff;
+  flex: 1;
 }
 
-.logo-icon {
-  width: 30px;
-  height: 30px;
-  color: #1db954;
+.logo-container {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.logo-line {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: block;
 }
 
 .logo-text {
@@ -552,6 +585,62 @@ html, body {
   border: 1px solid var(--glass-border);
   border-radius: 8px;
 }
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-container {
+  background: rgba(24, 24, 24, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Dark theme colors for modal */
+.dark-300 { color: rgba(255, 255, 255, 0.9); }
+.dark-400 { color: rgba(255, 255, 255, 0.7); }
+.dark-500 { color: rgba(255, 255, 255, 0.5); }
+.dark-600 { background-color: rgba(255, 255, 255, 0.1); }
+.dark-700 {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.dark-800 { background-color: rgba(255, 255, 255, 0.03); }
+
+.primary-500 { background-color: #1db954; }
+.primary-600 { background-color: #1aa34a; }
+.accent-500 { background-color: #4ecdc4; }
+
+/* Fix Tailwind utilities that might be missing */
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.z-50 { z-index: 50; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.rounded-2xl { border-radius: 1rem; }
+.w-full { width: 100%; }
+.max-w-lg { max-width: 32rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
 /* Button styles - matching original */
 .btn-primary {

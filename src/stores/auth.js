@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed(() => user.value?.email || '')
   const userName = computed(() => profile.value?.full_name || userEmail.value || 'User')
   const userRole = computed(() => profile.value?.role || 'artist')
+  const isManager = computed(() => ['manager','admin','owner'].includes(userRole.value))
   const userAvatar = computed(() => profile.value?.avatar_url || '') // empty string instead of null
 
   // Role-based permissions
@@ -314,6 +315,7 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     userName,
     userRole,
+    isManager,
     userAvatar,
     canCreateArtist,
     canManageUsers,
