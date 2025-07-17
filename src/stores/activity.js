@@ -1,275 +1,253 @@
-// stores/activity.js - MOCK MODE FOR LOCAL TESTING
+// stores/activity.js - Production Supabase integration
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from './auth'
 
-// Local reactive activity data
-const LOCAL_ACTIVITIES = []
+export const useActivityStore = defineStore('activity', () => {
+  // State
+  const activities = ref([])
+  const loading = ref(false)
+  const error = ref(null)
 
-export const useActivityStore = defineStore('activity', {
-  state: () => ({
-    activities: [...LOCAL_ACTIVITIES],
-    loading: false,
-    error: null
-  }),
+  // Computed getters
+  const recentActivities = computed(() => {
+    return activities.value
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 20)
+  })
 
-  getters: {
-    recentActivities: (state) => {
-      return state.activities
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 20)
-    },
+  const activitiesByArtist = (artistId) => {
+    return activities.value.filter(activity => activity.artist_id === artistId)
+  }
 
-    activitiesByArtist: (state) => (artistId) => {
-      return state.activities.filter(activity => activity.artist_id === artistId)
-    },
+  const activitiesByUser = (userId) => {
+    return activities.value.filter(activity => activity.user_id === userId)
+  }
 
-    activitiesByUser: (state) => (userId) => {
-      return state.activities.filter(activity => activity.user_id === userId)
-    }
-  },
+  // Actions
+  const loadActivities = async (artistId = null) => {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    // Load activities for a specific artist or all activities
-    async loadActivities(artistId = null) {
-      this.loading = true
-      this.error = null
+    try {
+      let query = supabase
+        .from('activities')
+        .select(`
+          *,
+          profiles(full_name, avatar_url),
+          artists(name, slug)
+        `)
+        .order('created_at', { ascending: false })
 
-      try {
-        console.log('🎭 MOCK MODE: Loading activities locally', artistId ? `for artist ${artistId}` : 'for all artists')
-        
-        // Generate some mock activities if none exist
-        if (this.activities.length === 0) {
-          this.generateMockActivities(artistId)
-        }
-
-        // Filter by artist if specified
-        let filteredActivities = this.activities
-        if (artistId) {
-          filteredActivities = this.activities.filter(activity => activity.artist_id === artistId)
-        }
-
-        return filteredActivities
-      } catch (err) {
-        console.error('Failed to load activities:', err)
-        this.error = err.message
-        return []
-      } finally {
-        this.loading = false
+      // Filter by artist if specified
+      if (artistId) {
+        query = query.eq('artist_id', artistId)
       }
-    },
 
-    // Log a new activity
-    async logActivity(activity) {
+      const { data, error: queryError } = await query.limit(100)
+
+      if (queryError) throw queryError
+
+      // Transform data to include user and artist names
+      activities.value = data.map(activity => ({
+        ...activity,
+        user_name: activity.profiles?.full_name || 'Unknown User',
+        user_avatar: activity.profiles?.avatar_url,
+        artist_name: activity.artists?.name || 'Unknown Artist',
+        artist_slug: activity.artists?.slug
+      }))
+
+      return activities.value
+    } catch (err) {
+      console.error('Failed to load activities:', err)
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const logActivity = async (artistId, type, description, metadata = null) => {
+    try {
       const authStore = useAuthStore()
 
-      if (!authStore.user) {
-        console.warn('Cannot log activity: No user authenticated')
-        return null
+      if (!authStore.isAuthenticated) {
+        console.warn('Cannot log activity: user not authenticated')
+        return
       }
 
-      try {
-        console.log('🎭 MOCK MODE: Logging activity locally', activity.action_type)
-
-        const activityData = {
-          id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      const { data, error: insertError } = await supabase
+        .from('activities')
+        .insert({
+          artist_id: artistId,
           user_id: authStore.user.id,
-          artist_id: activity.artist_id,
-          action_type: activity.action_type,
-          target_type: activity.target_type || 'general',
-          target_id: activity.target_id,
-          description: activity.description,
-          metadata: activity.metadata || {},
-          created_at: new Date().toISOString(),
-          user: {
-            name: authStore.userName,
-            avatar_url: authStore.userAvatar
-          },
-          artist: {
-            name: 'Mock Artist',
-            slug: 'mock-artist'
-          }
+          type,
+          description,
+          metadata
+        })
+        .select(`
+          *,
+          profiles(full_name, avatar_url),
+          artists(name, slug)
+        `)
+        .single()
+
+      if (insertError) throw insertError
+
+      // Add to local state
+      const newActivity = {
+        ...data,
+        user_name: data.profiles?.full_name || authStore.userName,
+        user_avatar: data.profiles?.avatar_url || authStore.userAvatar,
+        artist_name: data.artists?.name || 'Unknown Artist',
+        artist_slug: data.artists?.slug
+      }
+
+      activities.value.unshift(newActivity)
+
+      // Keep only recent activities in memory (limit to 100)
+      if (activities.value.length > 100) {
+        activities.value = activities.value.slice(0, 100)
+      }
+
+      return newActivity
+    } catch (err) {
+      console.error('Failed to log activity:', err)
+      error.value = err.message
+      // Don't throw error for activity logging as it's not critical
+    }
+  }
+
+  const deleteActivity = async (activityId) => {
+    try {
+      loading.value = true
+
+      const { error: deleteError } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', activityId)
+
+      if (deleteError) throw deleteError
+
+      // Remove from local state
+      const index = activities.value.findIndex(a => a.id === activityId)
+      if (index !== -1) {
+        activities.value.splice(index, 1)
+      }
+
+      return true
+    } catch (err) {
+      console.error('Failed to delete activity:', err)
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const clearActivities = () => {
+    activities.value = []
+    error.value = null
+  }
+
+  // Real-time subscription for activities
+  const subscribeToActivities = (artistId = null) => {
+    let channel = supabase.channel('activities')
+
+    if (artistId) {
+      channel = channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activities',
+          filter: `artist_id=eq.${artistId}`
+        },
+        handleActivityChange
+      )
+    } else {
+      channel = channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activities'
+        },
+        handleActivityChange
+      )
+    }
+
+    channel.subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  const handleActivityChange = async (payload) => {
+    console.log('Activity change received:', payload)
+
+    if (payload.eventType === 'INSERT') {
+      // Fetch the complete activity data with joins
+      const { data, error } = await supabase
+        .from('activities')
+        .select(`
+          *,
+          profiles(full_name, avatar_url),
+          artists(name, slug)
+        `)
+        .eq('id', payload.new.id)
+        .single()
+
+      if (!error && data) {
+        const newActivity = {
+          ...data,
+          user_name: data.profiles?.full_name || 'Unknown User',
+          user_avatar: data.profiles?.avatar_url,
+          artist_name: data.artists?.name || 'Unknown Artist',
+          artist_slug: data.artists?.slug
         }
 
-        // Validate required fields
-        if (!activityData.action_type) {
-          console.warn('Cannot log activity: action_type is required')
-          return null
-        }
-
-        // Add to local state
-        this.activities.unshift(activityData)
+        // Add to beginning of activities array
+        activities.value.unshift(newActivity)
 
         // Keep only recent activities in memory
-        if (this.activities.length > 100) {
-          this.activities = this.activities.slice(0, 100)
+        if (activities.value.length > 100) {
+          activities.value = activities.value.slice(0, 100)
         }
-
-        return activityData
-      } catch (err) {
-        console.error('Failed to log activity:', err)
-        this.error = err.message
-        return null
       }
-    },
-
-    // Helper methods for common activities
-    async logMediaUpload(artistId, fileName, fileType) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'media_upload',
-        target_type: 'media',
-        target_id: null,
-        description: `Uploaded ${fileName}`,
-        metadata: {
-          file_name: fileName,
-          file_type: fileType,
-          upload_time: new Date().toISOString()
-        }
-      })
-    },
-
-    async logEventCreated(artistId, eventId, eventName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'event_created',
-        target_type: 'event',
-        target_id: eventId,
-        description: `Created event "${eventName}"`,
-        metadata: {
-          event_name: eventName,
-          event_id: eventId
-        }
-      })
-    },
-
-    async logTeamJoined(artistId, userId, userName, role) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'team_joined',
-        target_type: 'user',
-        target_id: userId,
-        description: `${userName} joined as ${role}`,
-        metadata: {
-          user_name: userName,
-          role: role,
-          joined_at: new Date().toISOString()
-        }
-      })
-    },
-
-    async logMoodboardUpdated(artistId, moodboardId, moodboardName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'moodboard_updated',
-        target_type: 'moodboard',
-        target_id: moodboardId,
-        description: `Updated moodboard "${moodboardName}"`,
-        metadata: {
-          moodboard_name: moodboardName,
-          moodboard_id: moodboardId
-        }
-      })
-    },
-
-    async logNoteAdded(artistId, noteId, noteTitle) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'note_added',
-        target_type: 'note',
-        target_id: noteId,
-        description: `Added note "${noteTitle}"`,
-        metadata: {
-          note_title: noteTitle,
-          note_id: noteId
-        }
-      })
-    },
-
-    async logPlaylistCreated(artistId, playlistId, playlistName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'playlist_created',
-        target_type: 'playlist',
-        target_id: playlistId,
-        description: `Created playlist "${playlistName}"`,
-        metadata: {
-          playlist_name: playlistName,
-          playlist_id: playlistId
-        }
-      })
-    },
-
-    // Initialize or fix the activity table structure (mocked)
-    async initializeActivityTable() {
-      try {
-        console.log('🎭 MOCK MODE: Activity table initialized locally')
-        return true
-      } catch (err) {
-        console.error('Failed to initialize activity table:', err)
-        return false
+    } else if (payload.eventType === 'DELETE') {
+      // Remove from local state
+      const index = activities.value.findIndex(a => a.id === payload.old.id)
+      if (index !== -1) {
+        activities.value.splice(index, 1)
       }
-    },
-
-    // Clear activities (for testing or reset)
-    clearActivities() {
-      console.log('🎭 MOCK MODE: Clearing local activities')
-      this.activities = []
-      this.error = null
-    },
-
-    // Generate mock activities for development
-    generateMockActivities(artistId, count = 10) {
-      console.log('🎭 MOCK MODE: Generating mock activities', { artistId, count })
-      
-      const mockActivities = []
-      const actionTypes = [
-        'media_upload',
-        'event_created',
-        'team_joined',
-        'moodboard_updated',
-        'note_added',
-        'playlist_created'
-      ]
-
-      const descriptions = {
-        media_upload: ['Uploaded demo track', 'Added album artwork', 'Shared voice memo'],
-        event_created: ['Created studio session', 'Scheduled recording', 'Added tour date'],
-        team_joined: ['Sarah joined as producer', 'Mike joined as engineer', 'Anna joined as manager'],
-        moodboard_updated: ['Updated visual concepts', 'Added inspiration images', 'Refined color palette'],
-        note_added: ['Added songwriting idea', 'Noted production feedback', 'Saved lyric concept'],
-        playlist_created: ['Created demo collection', 'Made reference playlist', 'Organized unreleased tracks']
+    } else if (payload.eventType === 'UPDATE') {
+      // Update in local state
+      const index = activities.value.findIndex(a => a.id === payload.new.id)
+      if (index !== -1) {
+        activities.value[index] = { ...activities.value[index], ...payload.new }
       }
-
-      const mockArtistIds = artistId ? [artistId] : ['1', '2', '3']
-      
-      for (let i = 0; i < count; i++) {
-        const actionType = actionTypes[Math.floor(Math.random() * actionTypes.length)]
-        const description = descriptions[actionType][Math.floor(Math.random() * descriptions[actionType].length)]
-        const selectedArtistId = mockArtistIds[Math.floor(Math.random() * mockArtistIds.length)]
-
-        mockActivities.push({
-          id: `mock-activity-${i}`,
-          user_id: 'mock-user-123',
-          artist_id: selectedArtistId,
-          action_type: actionType,
-          target_type: actionType.split('_')[0],
-          target_id: `mock-target-${i}`,
-          description: description,
-          metadata: {},
-          created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          user: {
-            name: ['Demo User', 'Sarah Chen', 'Mike Johnson', 'Anna Rodriguez'][Math.floor(Math.random() * 4)],
-            avatar_url: null
-          },
-          artist: {
-            name: 'Mock Artist',
-            slug: 'mock-artist'
-          }
-        })
-      }
-
-      this.activities = mockActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      return mockActivities
     }
+  }
+
+  return {
+    // State
+    activities,
+    loading,
+    error,
+
+    // Computed
+    recentActivities,
+
+    // Actions
+    loadActivities,
+    logActivity,
+    deleteActivity,
+    clearActivities,
+    subscribeToActivities,
+    activitiesByArtist,
+    activitiesByUser
   }
 })
