@@ -374,6 +374,20 @@
               <p>No artists yet. Create your first workspace to get started.</p>
             </div>
 
+            <!-- Fallback error message when API fails -->
+            <div v-if="!loading && recentArtists.length === 0" class="api-error-fallback">
+              <div class="error-icon">⚠️</div>
+              <h3>Unable to load dashboard data</h3>
+              <p>We're having trouble connecting to our services. Please check your internet connection and try refreshing the page.</p>
+              <button @click="dashboardStore.refreshData()" class="retry-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                Try Again
+              </button>
+            </div>
+
             <div v-else class="artists-grid">
               <article
                 v-for="artist in recentArtists.slice(0, 6)"
@@ -882,7 +896,7 @@ onUnmounted(() => {
 .dashboard-view {
   height: 100%;
   overflow-y: auto;
-  background: #000;
+  background: #000 !important;
 }
 
 /* Minimal Header */
@@ -1398,9 +1412,64 @@ onUnmounted(() => {
 .empty-artists,
 .empty-activity {
   text-align: center;
-  padding: 40px;
-  color: rgba(255, 255, 255, 0.3);
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
   font-size: 14px;
+  border-radius: 12px;
+  margin: 24px 0;
+}
+
+/* API Error Fallback */
+.api-error-fallback {
+  text-align: center;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 12px;
+  margin: 24px 0;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+}
+
+.api-error-fallback .error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.api-error-fallback h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #ef4444;
+}
+
+.api-error-fallback p {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 24px 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.api-error-fallback .retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.api-error-fallback .retry-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
 }
 
 /* Loading States */
