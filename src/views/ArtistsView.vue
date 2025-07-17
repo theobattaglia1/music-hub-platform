@@ -410,13 +410,7 @@ const loadArtists = async () => {
   try {
     loading.value = true
     await dashboardStore.loadArtists()
-    // MOCK MODE: Add random data for demo purposes
-    // In production, this data would come from the API
-    artists.value = dashboardStore.artists.map(artist => ({
-      ...artist,
-      monthly_listeners: Math.floor(Math.random() * 1000000), // Mock listener count
-      is_live: Math.random() > 0.8 // Mock live status (20% chance)
-    }))
+    artists.value = dashboardStore.artists
   } catch (error) {
     console.error('Failed to load artists:', error)
     showToast({ message: 'Failed to load artists', type: 'error' })
