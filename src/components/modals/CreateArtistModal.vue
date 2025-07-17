@@ -104,6 +104,7 @@
               type="text"
               required
               pattern="[a-z0-9-]+"
+              title="Only lowercase letters, numbers, and dashes allowed"
               maxlength="50"
               class="flex-1 px-4 py-2 bg-dark-800 border border-dark-700 rounded-r-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
               placeholder="artist-name"
@@ -270,17 +271,24 @@ const form = ref({
 const isFormValid = computed(() => {
   return form.value.name.trim() &&
          form.value.slug.trim() &&
+         // Validate slug: only lowercase letters, numbers, and dashes (no slashes or regex delimiters)
          /^[a-z0-9-]+$/.test(form.value.slug)
 })
 
 // Methods
 const updateSlug = () => {
   if (form.value.name) {
+    // Generate URL-safe slug from artist name:
+    // 1. Convert to lowercase
+    // 2. Remove non-alphanumeric characters except spaces and dashes
+    // 3. Replace spaces with dashes
+    // 4. Remove consecutive dashes
+    // 5. Trim any leading/trailing whitespace
     form.value.slug = form.value.name
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
+      .replace(/[^a-z0-9\s-]/g, '') // Remove invalid characters
+      .replace(/\s+/g, '-')          // Replace spaces with dashes
+      .replace(/-+/g, '-')           // Remove consecutive dashes
       .trim()
   }
 }
@@ -289,13 +297,13 @@ const handleImageUpload = (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  // Validate file type
+  // Validate file type for security and compatibility
   if (!file.type.startsWith('image/')) {
     error.value = 'Please select a valid image file'
     return
   }
 
-  // Validate file size (5MB max)
+  // Validate file size (5MB max) to prevent performance issues
   if (file.size > 5 * 1024 * 1024) {
     error.value = 'Image size must be less than 5MB'
     return
@@ -303,13 +311,14 @@ const handleImageUpload = (event) => {
 
   imageFile.value = file
 
-  // Create preview
+  // Create preview using FileReader for better UX
   const reader = new FileReader()
   reader.onload = (e) => {
     previewImage.value = e.target.result
   }
   reader.readAsDataURL(file)
 
+  // Clear any previous errors
   error.value = ''
 }
 
@@ -337,21 +346,24 @@ const handleSubmit = async () => {
   }
 }
 
-// Handle escape key
+// Handle escape key for better accessibility
 const handleKeydown = (event) => {
   if (event.key === 'Escape' && !loading.value) {
     emit('close')
   }
 }
 
-// Add event listener for escape key
+// Add event listener for escape key on mount
+// Clean up event listener on unmount to prevent memory leaks
 import { onMounted, onUnmounted } from 'vue'
 
 onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
+  // Add passive event listener for better performance
+  document.addEventListener('keydown', handleKeydown, { passive: true })
 })
 
 onUnmounted(() => {
+  // Always clean up event listeners to prevent memory leaks
   document.removeEventListener('keydown', handleKeydown)
 })
 </script>

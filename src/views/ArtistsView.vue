@@ -219,7 +219,7 @@
                 <div class="team-avatars">
                   <div
                     v-for="(member, idx) in artist.team_members.slice(0, 4)"
-                    :key="member.id"
+                    :key="`${artist.id}-${member.id}`"
                     class="team-avatar"
                     :style="{ '--index': idx }"
                     :title="member.name"
@@ -410,10 +410,12 @@ const loadArtists = async () => {
   try {
     loading.value = true
     await dashboardStore.loadArtists()
+    // MOCK MODE: Add random data for demo purposes
+    // In production, this data would come from the API
     artists.value = dashboardStore.artists.map(artist => ({
       ...artist,
-      monthly_listeners: Math.floor(Math.random() * 1000000),
-      is_live: Math.random() > 0.8
+      monthly_listeners: Math.floor(Math.random() * 1000000), // Mock listener count
+      is_live: Math.random() > 0.8 // Mock live status (20% chance)
     }))
   } catch (error) {
     console.error('Failed to load artists:', error)
@@ -451,15 +453,18 @@ const handleCreateArtist = () => {
 }
 
 const handleArtistCreated = (artist) => {
+  // Add new artist to local state for immediate UI update
   artists.value.push(artist)
   showCreateModal.value = false
   showToast({ message: 'Artist created successfully', type: 'success' })
+  // Navigate to the new artist's page for better UX
   navigateToArtist(artist)
 }
 
 const handlePlayArtist = (artist) => {
   showToast({ message: `Playing ${artist.name}'s music`, type: 'info' })
-  // Implement play functionality
+  // TODO: Implement actual music playback functionality
+  // This would integrate with the music player component
 }
 
 const handleArtistMenu = (artist, event) => {
@@ -516,20 +521,22 @@ const closeContextMenu = () => {
   selectedArtist.value = null
 }
 
-// Click outside handler
+// Click outside handler for context menu accessibility
 const handleClickOutside = (event) => {
   if (showContextMenu.value && !event.target.closest('.context-menu')) {
     closeContextMenu()
   }
 }
 
-// Lifecycle
+// Lifecycle - Clean setup and teardown
 onMounted(() => {
   loadArtists()
-  document.addEventListener('click', handleClickOutside)
+  // Add click outside listener for context menu - using passive for better performance
+  document.addEventListener('click', handleClickOutside, { passive: true })
 })
 
 onUnmounted(() => {
+  // Always clean up event listeners to prevent memory leaks
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
