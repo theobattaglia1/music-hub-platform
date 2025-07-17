@@ -1,19 +1,45 @@
 /**
- * Enhanced Auth Store with Vue Query integration
+ * Enhanced Auth Store with Vue Query integration - MOCK MODE FOR LOCAL TESTING
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { supabase, getCurrentUser, getUserProfile } from '@/lib/supabase'
-import { queryKeys, invalidateQueries } from '@/shared/services/queryClient'
-import { apiService } from '@/shared/services/api'
-import { STORAGE_BUCKETS } from '@/core/constants'
+
+// Mock user data
+const MOCK_USER = {
+  id: 'mock-user-123',
+  email: 'demo@example.com',
+  user_metadata: {
+    full_name: 'Demo User',
+    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
+  }
+}
+
+const MOCK_PROFILE = {
+  id: 'mock-user-123',
+  email: 'demo@example.com',
+  full_name: 'Demo User',
+  avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256',
+  role: 'owner',
+  preferences: {},
+  social_links: {},
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+}
+
+const MOCK_PREFERENCES = {
+  id: 'mock-user-123',
+  theme: 'light',
+  notifications_enabled: true,
+  email_notifications: true,
+  auto_save: true
+}
 
 export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   // State
   const user = ref(null)
-  const loading = ref(true)
+  const loading = ref(false) // Start with false since we're mocked
   const isInitialized = ref(false)
 
   // Get query client for cache management
@@ -24,34 +50,46 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   const userEmail = computed(() => user.value?.email || '')
   const userId = computed(() => user.value?.id)
 
-  // Vue Query: User Profile
+  // Mock query keys for consistency
+  const mockQueryKeys = {
+    user: {
+      profile: (userId) => ['user', 'profile', userId?.value || userId],
+      preferences: (userId) => ['user', 'preferences', userId?.value || userId]
+    }
+  }
+
+  // Vue Query: User Profile (mocked)
   const {
     data: profile,
     isLoading: profileLoading,
-    error: profileError,
+    error: _profileError,
     refetch: refetchProfile
   } = useQuery({
-    queryKey: queryKeys.user.profile(userId),
-    queryFn: () => getUserProfile(userId.value),
+    queryKey: mockQueryKeys.user.profile(userId),
+    queryFn: async () => {
+      console.log('🎭 MOCK MODE: Fetching user profile')
+      return MOCK_PROFILE
+    },
     enabled: computed(() => !!userId.value),
     staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2
+    retry: 2,
+    initialData: MOCK_PROFILE
   })
 
-  // Vue Query: User Preferences  
+  // Vue Query: User Preferences (mocked)
   const {
     data: preferences,
     isLoading: preferencesLoading,
     refetch: refetchPreferences
   } = useQuery({
-    queryKey: queryKeys.user.preferences(userId),
+    queryKey: mockQueryKeys.user.preferences(userId),
     queryFn: async () => {
-      if (!userId.value) return null
-      const { data } = await apiService.getById('user_preferences', userId.value)
-      return data
+      console.log('🎭 MOCK MODE: Fetching user preferences')
+      return MOCK_PREFERENCES
     },
     enabled: computed(() => !!userId.value),
-    staleTime: 15 * 60 * 1000 // 15 minutes
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    initialData: MOCK_PREFERENCES
   })
 
   // Derived computed values
@@ -69,34 +107,39 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
     return ['owner', 'admin'].includes(userRole.value)
   })
 
-  // Update Profile Mutation
+  // Update Profile Mutation (mocked)
   const updateProfileMutation = useMutation({
     mutationFn: async ({ profileData, avatarFile }) => {
+      console.log('🎭 MOCK MODE: Updating profile', profileData)
+      
       let updateData = { ...profileData }
 
-      // Upload new avatar if provided
+      // Mock avatar upload
       if (avatarFile) {
-        const uploadResult = await apiService.uploadFile(
-          STORAGE_BUCKETS.USER_UPLOADS, 
-          avatarFile,
-          `${userId.value}-avatar-${Date.now()}`
-        )
-        updateData.avatar_url = uploadResult.publicUrl
+        updateData.avatar_url = `https://ui-avatars.com/api/?name=${encodeURIComponent(updateData.full_name || 'User')}&background=6366f1&color=fff&size=256`
       }
 
-      const { data } = await apiService.update('user_profiles', userId.value, updateData)
-      return data
+      const updatedProfile = {
+        ...MOCK_PROFILE,
+        ...updateData,
+        updated_at: new Date().toISOString()
+      }
+
+      // Update the local mock data
+      Object.assign(MOCK_PROFILE, updatedProfile)
+      
+      return updatedProfile
     },
     onMutate: async ({ profileData }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.user.profile(userId.value) })
+      await queryClient.cancelQueries({ queryKey: mockQueryKeys.user.profile(userId.value) })
 
       // Snapshot previous value
-      const previousProfile = queryClient.getQueryData(queryKeys.user.profile(userId.value))
+      const previousProfile = queryClient.getQueryData(mockQueryKeys.user.profile(userId.value))
 
       // Optimistically update
       queryClient.setQueryData(
-        queryKeys.user.profile(userId.value),
+        mockQueryKeys.user.profile(userId.value),
         (old) => ({ ...old, ...profileData })
       )
 
@@ -106,7 +149,7 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
       // Rollback on error
       if (context?.previousProfile) {
         queryClient.setQueryData(
-          queryKeys.user.profile(userId.value),
+          mockQueryKeys.user.profile(userId.value),
           context.previousProfile
         )
       }
@@ -114,30 +157,31 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
     onSuccess: (updatedProfile) => {
       // Update cache with server response
       queryClient.setQueryData(
-        queryKeys.user.profile(userId.value),
+        mockQueryKeys.user.profile(userId.value),
         updatedProfile
       )
     }
   })
 
-  // Update Preferences Mutation
+  // Update Preferences Mutation (mocked)
   const updatePreferencesMutation = useMutation({
     mutationFn: async (preferencesData) => {
-      const { data } = await apiService.request(() =>
-        supabase
-          .from('user_preferences')
-          .upsert({
-            id: userId.value,
-            ...preferencesData
-          })
-          .select()
-          .single()
-      )
-      return data
+      console.log('🎭 MOCK MODE: Updating preferences', preferencesData)
+      
+      const updatedPreferences = {
+        ...MOCK_PREFERENCES,
+        ...preferencesData,
+        updated_at: new Date().toISOString()
+      }
+
+      // Update the local mock data
+      Object.assign(MOCK_PREFERENCES, updatedPreferences)
+      
+      return updatedPreferences
     },
     onSuccess: (updatedPreferences) => {
       queryClient.setQueryData(
-        queryKeys.user.preferences(userId.value),
+        mockQueryKeys.user.preferences(userId.value),
         updatedPreferences
       )
     }
@@ -147,25 +191,16 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   const initialize = async () => {
     try {
       loading.value = true
+      console.log('🎭 MOCK MODE: Initializing enhanced auth with demo user')
 
-      // Get current session
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) throw error
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
 
-      if (session?.user) {
-        await setUser(session.user)
-      }
-
-      // Listen for auth changes
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email)
-
-        if (session?.user) {
-          await setUser(session.user)
-        } else {
-          clearUser()
-        }
-      })
+      // Invalidate and refetch user-related queries
+      await Promise.all([
+        refetchProfile(),
+        refetchPreferences()
+      ])
 
     } catch (error) {
       console.error('Auth initialization error:', error)
@@ -176,10 +211,10 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   }
 
   const setUser = async (newUser) => {
-    user.value = newUser
+    user.value = newUser || MOCK_USER
     
     // Invalidate and refetch user-related queries
-    if (newUser?.id) {
+    if (user.value?.id) {
       await Promise.all([
         refetchProfile(),
         refetchPreferences()
@@ -188,30 +223,19 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   }
 
   const clearUser = () => {
-    user.value = null
-    
-    // Clear all cached user data
-    if (userId.value) {
-      queryClient.removeQueries({ queryKey: queryKeys.user.profile(userId.value) })
-      queryClient.removeQueries({ queryKey: queryKeys.user.preferences(userId.value) })
-    }
-    
-    // Clear all other cached data on logout
-    queryClient.clear()
+    console.log('🎭 MOCK MODE: Clear user called, but keeping demo user authenticated')
+    // In mock mode, we don't actually clear the user for testing purposes
   }
 
   const signIn = async (email, password) => {
     loading.value = true
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) throw error
+      console.log('🎭 MOCK MODE: Sign in for', email)
       
-      // User will be set via the auth state change listener
-      return data
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
+      
+      return { data: { user: MOCK_USER, session: { user: MOCK_USER } } }
     } catch (error) {
       console.error('Sign in error:', error)
       throw error
@@ -223,16 +247,12 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   const signUp = async (email, password, metadata = {}) => {
     loading.value = true
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata
-        }
-      })
-
-      if (error) throw error
-      return data
+      console.log('🎭 MOCK MODE: Sign up for', email)
+      
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
+      
+      return { data: { user: MOCK_USER, session: { user: MOCK_USER } } }
     } catch (error) {
       console.error('Sign up error:', error)
       throw error
@@ -244,10 +264,8 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   const signOut = async () => {
     loading.value = true
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      
-      clearUser()
+      console.log('🎭 MOCK MODE: Sign out called, but staying authenticated for testing')
+      // In mock mode, don't actually sign out
     } catch (error) {
       console.error('Sign out error:', error)
       throw error
@@ -257,19 +275,13 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   }
 
   const resetPassword = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`
-    })
-
-    if (error) throw error
+    console.log('🎭 MOCK MODE: Password reset simulated for', email)
+    // Mock password reset
   }
 
   const updatePassword = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
-
-    if (error) throw error
+    console.log('🎭 MOCK MODE: Password update simulated')
+    // Mock password update
   }
 
   // Convenience methods that use mutations
@@ -282,17 +294,15 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   }
 
   // Artist access control helpers
-  const canAccessArtist = (artistId) => {
-    // This will be expanded when we add artist team members
+  const canAccessArtist = (_artistId) => {
     return isAuthenticated.value
   }
 
-  const canEditArtist = (artistId) => {
-    // This will be expanded when we add artist team members
+  const canEditArtist = (_artistId) => {
     return isAuthenticated.value
   }
 
-  const canDeleteArtist = (artistId) => {
+  const canDeleteArtist = (_artistId) => {
     return ['owner', 'admin'].includes(userRole.value)
   }
 

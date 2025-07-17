@@ -165,8 +165,10 @@ const router = createRouter({
   }
 })
 
-// Navigation guards
+// Navigation guards - MOCK MODE: Bypass auth checks for UI testing
 router.beforeEach(async (to, from, next) => {
+  console.log('🎭 MOCK MODE: Router navigation to', to.path)
+  
   const authStore = useAuthStore()
 
   // Wait for auth initialization
@@ -176,13 +178,17 @@ router.beforeEach(async (to, from, next) => {
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const hideForAuthenticated = to.matched.some(record => record.meta.hideForAuthenticated)
-  const isAuthenticated = authStore.isAuthenticated
+  
+  // MOCK MODE: Always consider user authenticated
+  const isAuthenticated = true
 
   if (requiresAuth && !isAuthenticated) {
-    // Redirect to login if auth required but not authenticated
+    // This shouldn't happen in mock mode, but keeping for consistency
+    console.log('🎭 MOCK MODE: Auth required but not authenticated (should not happen)')
     next('/auth/login')
   } else if (hideForAuthenticated && isAuthenticated) {
     // Redirect to dashboard if already authenticated and trying to access auth pages
+    console.log('🎭 MOCK MODE: Already authenticated, redirecting to dashboard')
     next('/dashboard')
   } else {
     // Proceed normally
