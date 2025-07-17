@@ -67,6 +67,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
       // If no artists found, use mock data for development
       if (!data || data.length === 0) {
+        console.debug('Dashboard: No artists found from API, using mock data')
         artists.value = [
           {
             id: '1',
@@ -121,10 +122,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
           }
         ]
       } else {
+        console.debug('Dashboard: Loaded', data.length, 'artists from API')
         artists.value = data
       }
     } catch (error) {
       console.error('Failed to load artists:', error)
+      console.debug('Dashboard: API error, falling back to mock data')
 
       // Use mock data on error as well
       artists.value = [
