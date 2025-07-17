@@ -176,13 +176,14 @@ const handleSubmit = async () => {
   }
 }
 
-// Check if already authenticated or redirect immediately in mock mode
+// Check if already authenticated
 onMounted(async () => {
-  console.log('🎭 MOCK MODE: LoginView mounted, redirecting to dashboard')
-  
-  // In mock mode, immediately redirect to dashboard
-  // This ensures the auth store is initialized with the mock user
+  // Wait for auth initialization
   await authStore.initialize()
-  router.push('/dashboard')
+  
+  // If already authenticated, redirect to dashboard
+  if (authStore.isAuthenticated) {
+    router.push('/dashboard')
+  }
 })
 </script>
