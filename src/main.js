@@ -4,6 +4,9 @@ import App from './App.vue'
 import router from './router'
 import './style.css'
 
+// Vue Query setup
+import { VueQueryPlugin, vueQueryPluginOptions } from '@/shared/services/queryClient'
+
 // Create Vue app
 const app = createApp(App)
 
@@ -13,6 +16,7 @@ const pinia = createPinia()
 // Use plugins
 app.use(pinia)
 app.use(router)
+app.use(VueQueryPlugin, vueQueryPluginOptions)
 
 // Global error handler
 app.config.errorHandler = (error, instance, info) => {
