@@ -1,25 +1,37 @@
 /**
- * Core API service for Supabase integration
+ * Core API service - MOCK MODE FOR LOCAL TESTING
+ * TODO: Re-enable Supabase integration when moving to production
  */
 
-import { supabase } from '@/lib/supabase'
-import { API_CONFIG, ERROR_MESSAGES } from '@/core/constants'
+// Mock data storage
+const MOCK_DATA_STORE = {
+  user_profiles: new Map(),
+  user_preferences: new Map(),
+  artists: new Map(),
+  artist_activity: new Map(),
+  playlists: new Map(),
+  songs: new Map()
+}
 
-class ApiService {
+class MockApiService {
   constructor() {
-    this.supabase = supabase
-    this.timeout = API_CONFIG.REQUEST_TIMEOUT
-    this.retryAttempts = API_CONFIG.RETRY_ATTEMPTS
-    this.retryDelay = API_CONFIG.RETRY_DELAY
+    this.timeout = 5000 // Mock timeout
+    this.retryAttempts = 3
+    this.retryDelay = 1000
+    
+    console.log('🎭 MOCK MODE: API Service initialized with local data storage')
   }
 
-  // Generic request handler with retry logic
+  // Generic request handler with mock delay
   async request(operation, retryCount = 0) {
     try {
+      // Add small delay to simulate network request
+      await this.delay(Math.random() * 100 + 50)
+      
       const result = await operation()
       
       if (result.error) {
-        throw this.handleSupabaseError(result.error)
+        throw this.handleMockError(result.error)
       }
       
       return result
@@ -33,17 +45,15 @@ class ApiService {
     }
   }
 
-  // Handle Supabase-specific errors
-  handleSupabaseError(error) {
+  // Handle mock errors
+  handleMockError(error) {
     const errorMap = {
-      'auth/invalid-email': ERROR_MESSAGES.VALIDATION_ERROR,
-      'auth/user-not-found': ERROR_MESSAGES.NOT_FOUND,
-      'auth/wrong-password': ERROR_MESSAGES.UNAUTHORIZED,
-      'PGRST116': ERROR_MESSAGES.NOT_FOUND,
-      'PGRST301': ERROR_MESSAGES.UNAUTHORIZED,
+      'NOT_FOUND': 'Resource not found',
+      'UNAUTHORIZED': 'Unauthorized access',
+      'VALIDATION_ERROR': 'Invalid data provided'
     }
 
-    const message = errorMap[error.code] || error.message || ERROR_MESSAGES.GENERIC_ERROR
+    const message = errorMap[error.code] || error.message || 'Unknown error'
     
     return {
       code: error.code || 'UNKNOWN_ERROR',
@@ -64,72 +74,80 @@ class ApiService {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
-  // Query builder helpers
+  // Mock query builder - returns local data
   buildQuery(table, options = {}) {
-    let query = supabase.from(table)
+    console.log('🎭 MOCK MODE: Building query for', table, options)
+    
+    const store = MOCK_DATA_STORE[table] || new Map()
+    let data = Array.from(store.values())
 
-    // Select specific columns
-    if (options.select) {
-      query = query.select(options.select)
-    }
-
-    // Filters
+    // Apply filters
     if (options.filters) {
       Object.entries(options.filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           if (Array.isArray(value)) {
-            query = query.in(key, value)
+            data = data.filter(item => value.includes(item[key]))
           } else if (typeof value === 'string' && value.includes('*')) {
-            query = query.ilike(key, value.replace(/\*/g, '%'))
+            const regex = new RegExp(value.replace(/\*/g, '.*'), 'i')
+            data = data.filter(item => regex.test(item[key]))
           } else {
-            query = query.eq(key, value)
+            data = data.filter(item => item[key] === value)
           }
         }
       })
     }
 
-    // Search
+    // Apply search
     if (options.search && options.searchColumns) {
-      const searchConditions = options.searchColumns.map(column => 
-        `${column}.ilike.%${options.search}%`
-      ).join(',')
-      query = query.or(searchConditions)
+      const searchTerm = options.search.toLowerCase()
+      data = data.filter(item => 
+        options.searchColumns.some(column => 
+          item[column]?.toString().toLowerCase().includes(searchTerm)
+        )
+      )
     }
 
-    // Sorting
+    // Apply sorting
     if (options.sort) {
       const ascending = options.order !== 'desc'
-      query = query.order(options.sort, { ascending })
+      data.sort((a, b) => {
+        const aVal = a[options.sort]
+        const bVal = b[options.sort]
+        
+        if (aVal < bVal) return ascending ? -1 : 1
+        if (aVal > bVal) return ascending ? 1 : -1
+        return 0
+      })
     }
 
-    // Pagination
+    // Apply pagination
     if (options.page && options.pageSize) {
       const from = (options.page - 1) * options.pageSize
-      const to = from + options.pageSize - 1
-      query = query.range(from, to)
+      const to = from + options.pageSize
+      data = data.slice(from, to)
     }
 
-    return query
+    return {
+      data,
+      error: null
+    }
   }
 
   // Pagination helper
   async getPaginated(table, options = {}) {
-    const pageSize = options.pageSize || API_CONFIG.DEFAULT_PAGE_SIZE
+    const pageSize = options.pageSize || 20
     const page = options.page || 1
 
     // Get total count
-    const countQuery = this.buildQuery(table, { ...options, page: undefined, pageSize: undefined })
-    const { count } = await this.request(() => 
-      countQuery.select('*', { count: 'exact', head: true })
-    )
+    const allData = Array.from(MOCK_DATA_STORE[table]?.values() || [])
+    const count = allData.length
 
-    // Get data
-    const dataQuery = this.buildQuery(table, { ...options, page, pageSize })
-    const { data } = await this.request(() => dataQuery)
+    // Get paginated data
+    const result = this.buildQuery(table, { ...options, page, pageSize })
 
     return {
-      data: data || [],
-      total: count || 0,
+      data: result.data || [],
+      total: count,
       page,
       pageSize,
       hasNext: page * pageSize < count,
@@ -137,119 +155,182 @@ class ApiService {
     }
   }
 
-  // Storage helpers
+  // Storage helpers (mocked)
   async uploadFile(bucket, file, path = null) {
+    console.log('🎭 MOCK MODE: Uploading file to', bucket, file.name)
+    
     const fileExt = file.name.split('.').pop()
     const fileName = path || `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    // Mock file upload
+    await this.delay(Math.random() * 500 + 200) // Simulate upload time
 
-    if (error) throw this.handleSupabaseError(error)
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName)
+    const publicUrl = `https://mock-storage.example.com/${bucket}/${fileName}`
 
     return {
-      ...data,
+      path: fileName,
       publicUrl,
       fileName
     }
   }
 
   async deleteFile(bucket, path) {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path])
-
-    if (error) throw this.handleSupabaseError(error)
+    console.log('🎭 MOCK MODE: Deleting file from', bucket, path)
+    await this.delay(100)
     return true
   }
 
-  // Real-time subscriptions
+  // Real-time subscriptions (mocked)
   createSubscription(table, callback, filter = null) {
-    let subscription = supabase
-      .channel(`${table}-changes`)
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table,
-          ...(filter && { filter })
-        }, 
-        callback
-      )
+    console.log('🎭 MOCK MODE: Creating subscription for', table)
+    
+    // Mock subscription that doesn't actually do anything
+    const mockSubscription = {
+      unsubscribe: () => {
+        console.log('🎭 MOCK MODE: Unsubscribing from', table)
+      }
+    }
 
-    subscription.subscribe()
-
-    return subscription
+    return mockSubscription
   }
 
-  // Auth helpers
+  // Auth helpers (mocked)
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error) throw this.handleSupabaseError(error)
-    return user
+    return {
+      id: 'mock-user-123',
+      email: 'demo@example.com',
+      user_metadata: {
+        full_name: 'Demo User',
+        avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
+      }
+    }
   }
 
   async signOut() {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw this.handleSupabaseError(error)
+    console.log('🎭 MOCK MODE: Sign out simulated')
     return true
   }
 
   // Generic CRUD operations
   async create(table, data) {
-    return this.request(() => 
-      supabase
-        .from(table)
-        .insert(data)
-        .select()
-        .single()
-    )
+    console.log('🎭 MOCK MODE: Creating record in', table, data)
+    
+    return this.request(async () => {
+      const store = MOCK_DATA_STORE[table] || new Map()
+      const id = data.id || `mock-${Date.now()}-${Math.random().toString(36).substring(7)}`
+      
+      const record = {
+        ...data,
+        id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      store.set(id, record)
+      MOCK_DATA_STORE[table] = store
+      
+      return {
+        data: record,
+        error: null
+      }
+    })
   }
 
   async getById(table, id, select = '*') {
-    return this.request(() =>
-      supabase
-        .from(table)
-        .select(select)
-        .eq('id', id)
-        .single()
-    )
+    console.log('🎭 MOCK MODE: Getting record from', table, 'with id', id)
+    
+    return this.request(async () => {
+      const store = MOCK_DATA_STORE[table] || new Map()
+      const record = store.get(id)
+      
+      if (!record) {
+        return {
+          data: null,
+          error: { code: 'NOT_FOUND', message: 'Record not found' }
+        }
+      }
+      
+      return {
+        data: record,
+        error: null
+      }
+    })
   }
 
   async update(table, id, data) {
-    return this.request(() =>
-      supabase
-        .from(table)
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single()
-    )
+    console.log('🎭 MOCK MODE: Updating record in', table, 'with id', id, data)
+    
+    return this.request(async () => {
+      const store = MOCK_DATA_STORE[table] || new Map()
+      const existing = store.get(id)
+      
+      if (!existing) {
+        return {
+          data: null,
+          error: { code: 'NOT_FOUND', message: 'Record not found' }
+        }
+      }
+      
+      const updated = {
+        ...existing,
+        ...data,
+        updated_at: new Date().toISOString()
+      }
+      
+      store.set(id, updated)
+      
+      return {
+        data: updated,
+        error: null
+      }
+    })
   }
 
   async delete(table, id) {
-    return this.request(() =>
-      supabase
-        .from(table)
-        .delete()
-        .eq('id', id)
-    )
+    console.log('🎭 MOCK MODE: Deleting record from', table, 'with id', id)
+    
+    return this.request(async () => {
+      const store = MOCK_DATA_STORE[table] || new Map()
+      const deleted = store.delete(id)
+      
+      if (!deleted) {
+        return {
+          data: null,
+          error: { code: 'NOT_FOUND', message: 'Record not found' }
+        }
+      }
+      
+      return {
+        data: { success: true },
+        error: null
+      }
+    })
   }
 
   async getAll(table, options = {}) {
-    const query = this.buildQuery(table, options)
-    return this.request(() => query)
+    console.log('🎭 MOCK MODE: Getting all records from', table, options)
+    
+    return this.request(async () => {
+      const result = this.buildQuery(table, options)
+      return result
+    })
+  }
+
+  // Initialize mock data
+  initializeMockData() {
+    console.log('🎭 MOCK MODE: Initializing mock data stores')
+    
+    // Initialize empty stores if they don't exist
+    Object.keys(MOCK_DATA_STORE).forEach(table => {
+      if (!MOCK_DATA_STORE[table]) {
+        MOCK_DATA_STORE[table] = new Map()
+      }
+    })
   }
 }
 
-export const apiService = new ApiService()
+export const apiService = new MockApiService()
 export default apiService
+
+// Initialize mock data on import
+apiService.initializeMockData()

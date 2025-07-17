@@ -1,11 +1,13 @@
-// stores/activity.js
+// stores/activity.js - MOCK MODE FOR LOCAL TESTING
 import { defineStore } from 'pinia'
-import { supabase } from '@/lib/supabase'
 import { useAuthStore } from './auth'
+
+// Local reactive activity data
+const LOCAL_ACTIVITIES = []
 
 export const useActivityStore = defineStore('activity', {
   state: () => ({
-    activities: [],
+    activities: [...LOCAL_ACTIVITIES],
     loading: false,
     error: null
   }),
@@ -33,35 +35,20 @@ export const useActivityStore = defineStore('activity', {
       this.error = null
 
       try {
-        let query = supabase
-          .from('artist_activity')
-          .select(`
-            *,
-            user:profiles(name, avatar_url),
-            artist:artists(name, slug)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(50)
+        console.log('🎭 MOCK MODE: Loading activities locally', artistId ? `for artist ${artistId}` : 'for all artists')
+        
+        // Generate some mock activities if none exist
+        if (this.activities.length === 0) {
+          this.generateMockActivities(artistId)
+        }
 
+        // Filter by artist if specified
+        let filteredActivities = this.activities
         if (artistId) {
-          query = query.eq('artist_id', artistId)
+          filteredActivities = this.activities.filter(activity => activity.artist_id === artistId)
         }
 
-        const { data, error } = await query
-
-        if (error) {
-          // If table doesn't exist or has schema issues, handle gracefully
-          if (error.code === '42P01' || error.message.includes('relation') || error.message.includes('column')) {
-            console.warn('Activity table schema issue:', error.message)
-            // Try to create/fix the table
-            await this.initializeActivityTable()
-            return []
-          }
-          throw error
-        }
-
-        this.activities = data || []
-        return this.activities
+        return filteredActivities
       } catch (err) {
         console.error('Failed to load activities:', err)
         this.error = err.message
@@ -81,7 +68,10 @@ export const useActivityStore = defineStore('activity', {
       }
 
       try {
+        console.log('🎭 MOCK MODE: Logging activity locally', activity.action_type)
+
         const activityData = {
+          id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           user_id: authStore.user.id,
           artist_id: activity.artist_id,
           action_type: activity.action_type,
@@ -89,7 +79,15 @@ export const useActivityStore = defineStore('activity', {
           target_id: activity.target_id,
           description: activity.description,
           metadata: activity.metadata || {},
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          user: {
+            name: authStore.userName,
+            avatar_url: authStore.userAvatar
+          },
+          artist: {
+            name: 'Mock Artist',
+            slug: 'mock-artist'
+          }
         }
 
         // Validate required fields
@@ -98,46 +96,15 @@ export const useActivityStore = defineStore('activity', {
           return null
         }
 
-        const { data, error } = await supabase
-          .from('artist_activity')
-          .insert([activityData])
-          .select(`
-            *,
-            user:profiles(name, avatar_url),
-            artist:artists(name, slug)
-          `)
-          .single()
-
-        if (error) {
-          // Handle constraint errors gracefully
-          if (error.code === '23505') {
-            console.warn('Duplicate activity prevented')
-            return null
-          }
-
-          if (error.message.includes('target_type')) {
-            console.warn('Invalid target_type:', activity.target_type)
-            // Try with default target_type
-            return await this.logActivity({
-              ...activity,
-              target_type: 'general'
-            })
-          }
-
-          throw error
-        }
-
         // Add to local state
-        if (data) {
-          this.activities.unshift(data)
+        this.activities.unshift(activityData)
 
-          // Keep only recent activities in memory
-          if (this.activities.length > 100) {
-            this.activities = this.activities.slice(0, 100)
-          }
+        // Keep only recent activities in memory
+        if (this.activities.length > 100) {
+          this.activities = this.activities.slice(0, 100)
         }
 
-        return data
+        return activityData
       } catch (err) {
         console.error('Failed to log activity:', err)
         this.error = err.message
@@ -232,76 +199,10 @@ export const useActivityStore = defineStore('activity', {
       })
     },
 
-    // Initialize or fix the activity table structure
+    // Initialize or fix the activity table structure (mocked)
     async initializeActivityTable() {
       try {
-        // This would typically be handled by migrations
-        // For now, we'll just ensure the expected structure exists
-        console.log('Checking artist_activity table structure...')
-
-        // Try a simple query to test table existence
-        const { error } = await supabase
-          .from('artist_activity')
-          .select('id')
-          .limit(1)
-
-        if (error) {
-          console.error('Activity table needs setup:', error.message)
-
-          // In a real app, you'd run a migration here
-          // For now, we'll provide SQL that needs to be run manually
-
-          const createTableSQL = `
-            -- Run this SQL in your Supabase SQL editor to fix the activity table:
-
-            CREATE TABLE IF NOT EXISTS artist_activity (
-              id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-              user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-              artist_id UUID REFERENCES artists(id) ON DELETE CASCADE,
-              action_type TEXT NOT NULL,
-              target_type TEXT DEFAULT 'general',
-              target_id UUID,
-              description TEXT NOT NULL,
-              metadata JSONB DEFAULT '{}',
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            );
-
-            -- Add RLS policies
-            ALTER TABLE artist_activity ENABLE ROW LEVEL SECURITY;
-
-            -- Policy: Users can view activities for artists they have access to
-            CREATE POLICY "Users can view artist activities" ON artist_activity
-              FOR SELECT USING (
-                artist_id IN (
-                  SELECT artist_id FROM artist_team_members
-                  WHERE user_id = auth.uid()
-                )
-              );
-
-            -- Policy: Users can insert activities for artists they have access to
-            CREATE POLICY "Users can create artist activities" ON artist_activity
-              FOR INSERT WITH CHECK (
-                user_id = auth.uid() AND
-                artist_id IN (
-                  SELECT artist_id FROM artist_team_members
-                  WHERE user_id = auth.uid()
-                )
-              );
-
-            -- Add indexes for performance
-            CREATE INDEX IF NOT EXISTS idx_artist_activity_artist_id ON artist_activity(artist_id);
-            CREATE INDEX IF NOT EXISTS idx_artist_activity_user_id ON artist_activity(user_id);
-            CREATE INDEX IF NOT EXISTS idx_artist_activity_created_at ON artist_activity(created_at);
-            CREATE INDEX IF NOT EXISTS idx_artist_activity_action_type ON artist_activity(action_type);
-          `
-
-          console.log('Activity table SQL for manual setup:', createTableSQL)
-
-          // Return empty array for now
-          return []
-        }
-
-        console.log('Activity table structure OK')
+        console.log('🎭 MOCK MODE: Activity table initialized locally')
         return true
       } catch (err) {
         console.error('Failed to initialize activity table:', err)
@@ -311,12 +212,15 @@ export const useActivityStore = defineStore('activity', {
 
     // Clear activities (for testing or reset)
     clearActivities() {
+      console.log('🎭 MOCK MODE: Clearing local activities')
       this.activities = []
       this.error = null
     },
 
     // Generate mock activities for development
     generateMockActivities(artistId, count = 10) {
+      console.log('🎭 MOCK MODE: Generating mock activities', { artistId, count })
+      
       const mockActivities = []
       const actionTypes = [
         'media_upload',
@@ -336,14 +240,17 @@ export const useActivityStore = defineStore('activity', {
         playlist_created: ['Created demo collection', 'Made reference playlist', 'Organized unreleased tracks']
       }
 
+      const mockArtistIds = artistId ? [artistId] : ['1', '2', '3']
+      
       for (let i = 0; i < count; i++) {
         const actionType = actionTypes[Math.floor(Math.random() * actionTypes.length)]
         const description = descriptions[actionType][Math.floor(Math.random() * descriptions[actionType].length)]
+        const selectedArtistId = mockArtistIds[Math.floor(Math.random() * mockArtistIds.length)]
 
         mockActivities.push({
-          id: `mock-${i}`,
-          user_id: 'mock-user',
-          artist_id: artistId,
+          id: `mock-activity-${i}`,
+          user_id: 'mock-user-123',
+          artist_id: selectedArtistId,
           action_type: actionType,
           target_type: actionType.split('_')[0],
           target_id: `mock-target-${i}`,
@@ -351,7 +258,7 @@ export const useActivityStore = defineStore('activity', {
           metadata: {},
           created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
           user: {
-            name: ['Sarah Chen', 'Mike Johnson', 'Anna Rodriguez'][Math.floor(Math.random() * 3)],
+            name: ['Demo User', 'Sarah Chen', 'Mike Johnson', 'Anna Rodriguez'][Math.floor(Math.random() * 4)],
             avatar_url: null
           },
           artist: {

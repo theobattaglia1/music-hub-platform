@@ -3,11 +3,31 @@ import { ref, computed } from 'vue'
 import { supabase, getCurrentUser, getUserProfile } from '@/lib/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
-  // State
+  // State - MOCK MODE: Always authenticated with demo user
   const user = ref(null)
   const profile = ref(null)
-  const loading = ref(true)
+  const loading = ref(false) // Start with false since we're mocked
   const isInitialized = ref(false)
+
+  // Mock user data
+  const MOCK_USER = {
+    id: 'mock-user-123',
+    email: 'demo@example.com',
+    user_metadata: {
+      full_name: 'Demo User',
+      avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
+    }
+  }
+
+  const MOCK_PROFILE = {
+    id: 'mock-user-123',
+    email: 'demo@example.com',
+    full_name: 'Demo User',
+    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256',
+    role: 'owner', // Give full permissions for testing
+    preferences: {},
+    social_links: {}
+  }
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
@@ -31,24 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
 
-      // Get current session
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) throw error
-
-      if (session?.user) {
-        await setUser(session.user)
-      }
-
-      // Listen for auth changes
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email)
-
-        if (session?.user) {
-          await setUser(session.user)
-        } else {
-          clearUser()
-        }
-      })
+      // MOCK MODE: Immediately set mock user as authenticated
+      console.log('🎭 MOCK MODE: Auto-authenticating demo user')
+      user.value = MOCK_USER
+      profile.value = MOCK_PROFILE
 
       isInitialized.value = true
     } catch (error) {
@@ -60,66 +66,33 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setUser = async (authUser) => {
     try {
-      user.value = authUser
-
-      // Get or create user profile
-      let userProfile = await getUserProfile(authUser.id)
-
-      if (!userProfile) {
-        // Create profile if it doesn't exist
-        userProfile = await createUserProfile(authUser)
-      }
-
-      profile.value = userProfile
+      user.value = authUser || MOCK_USER
+      profile.value = MOCK_PROFILE
     } catch (error) {
       console.error('Error setting user:', error)
     }
   }
 
   const clearUser = () => {
-    user.value = null
-    profile.value = null
+    // In mock mode, we don't actually clear the user
+    console.log('🎭 MOCK MODE: Clear user called, but keeping demo user authenticated')
   }
 
   const createUserProfile = async (authUser) => {
-    try {
-      const profileData = {
-        id: authUser.id,
-        email: authUser.email,
-        full_name: authUser.user_metadata?.full_name || '',
-        avatar_url: authUser.user_metadata?.avatar_url || null,
-        role: 'artist', // Default role
-        preferences: {},
-        social_links: {}
-      }
-
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert(profileData)
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error creating user profile:', error)
-      throw error
-    }
+    // MOCK MODE: Just return the mock profile
+    return MOCK_PROFILE
   }
 
+  // All auth methods are mocked to work locally
   const signInWithMagicLink = async (email) => {
     try {
       loading.value = true
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${import.meta.env.VITE_APP_URL}/auth/callback`
-        }
-      })
-
-      if (error) throw error
-
+      console.log('🎭 MOCK MODE: Magic link sign in for', email)
+      
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
+      profile.value = MOCK_PROFILE
+      
       return { success: true }
     } catch (error) {
       console.error('Magic link error:', error)
@@ -132,16 +105,13 @@ export const useAuthStore = defineStore('auth', () => {
   const signInWithPassword = async (email, password) => {
     try {
       loading.value = true
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) throw error
-
-      await setUser(data.user)
-      return { success: true, user: data.user }
+      console.log('🎭 MOCK MODE: Password sign in for', email)
+      
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
+      profile.value = MOCK_PROFILE
+      
+      return { success: true, user: MOCK_USER }
     } catch (error) {
       console.error('Sign in error:', error)
       throw error
@@ -153,19 +123,13 @@ export const useAuthStore = defineStore('auth', () => {
   const signUp = async (email, password, metadata = {}) => {
     try {
       loading.value = true
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata,
-          emailRedirectTo: `${import.meta.env.VITE_APP_URL}/auth/callback`
-        }
-      })
-
-      if (error) throw error
-
-      return { success: true, user: data.user }
+      console.log('🎭 MOCK MODE: Sign up for', email)
+      
+      // Auto-authenticate with mock user
+      user.value = MOCK_USER
+      profile.value = MOCK_PROFILE
+      
+      return { success: true, user: MOCK_USER }
     } catch (error) {
       console.error('Sign up error:', error)
       throw error
@@ -177,14 +141,11 @@ export const useAuthStore = defineStore('auth', () => {
   const signOut = async () => {
     try {
       loading.value = true
-
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-
-      clearUser()
-
-      // Redirect to login
-      window.location.href = '/auth/login'
+      console.log('🎭 MOCK MODE: Sign out called, but staying authenticated for testing')
+      
+      // In mock mode, don't actually sign out
+      // Just simulate the action
+      return true
     } catch (error) {
       console.error('Sign out error:', error)
       throw error
@@ -197,20 +158,15 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (!user.value) throw new Error('No user logged in')
 
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.value.id)
-        .select()
-        .single()
+      // MOCK MODE: Update local profile data
+      profile.value = {
+        ...profile.value,
+        ...updates,
+        updated_at: new Date().toISOString()
+      }
 
-      if (error) throw error
-
-      profile.value = data
-      return data
+      console.log('🎭 MOCK MODE: Profile updated locally', updates)
+      return profile.value
     } catch (error) {
       console.error('Profile update error:', error)
       throw error
@@ -219,21 +175,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const updatePassword = async (currentPassword, newPassword) => {
     try {
-      // First verify current password
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.value.email,
-        password: currentPassword
-      })
-
-      if (verifyError) throw new Error('Current password is incorrect')
-
-      // Update password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-
-      if (error) throw error
-
+      console.log('🎭 MOCK MODE: Password update simulated')
       return { success: true }
     } catch (error) {
       console.error('Password update error:', error)
@@ -245,24 +187,11 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (!user.value) throw new Error('No user logged in')
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.value.id}/avatar.${fileExt}`
-
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('artist-avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        })
-
-      if (uploadError) throw uploadError
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('artist-avatars')
-        .getPublicUrl(fileName)
-
+      console.log('🎭 MOCK MODE: Avatar upload simulated for', file.name)
+      
+      // Generate a mock URL
+      const publicUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=6366f1&color=fff&size=256`
+      
       // Update profile with new avatar URL
       await updateProfile({ avatar_url: publicUrl })
 
@@ -274,28 +203,22 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Artist access control helpers
-  const canAccessArtist = (artistId) => {
-    // This will be expanded when we add artist team members
-    return true // For now, all authenticated users can access
+  const canAccessArtist = (_artistId) => {
+    return true // Mock mode: allow all access
   }
 
-  const canEditArtist = (artistId) => {
-    // This will be expanded when we add artist team members
+  const canEditArtist = (_artistId) => {
     return isAuthenticated.value
   }
 
-  const canDeleteArtist = (artistId) => {
+  const canDeleteArtist = (_artistId) => {
     return ['owner', 'admin'].includes(userRole.value)
   }
 
   // Reset password
   const resetPassword = async (email) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${import.meta.env.VITE_APP_URL}/auth/reset-password`
-      })
-
-      if (error) throw error
+      console.log('🎭 MOCK MODE: Password reset simulated for', email)
       return { success: true }
     } catch (error) {
       console.error('Password reset error:', error)
