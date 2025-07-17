@@ -12,7 +12,7 @@ export const API_CONFIG = {
   REQUEST_TIMEOUT: 30000,
   
   // Mock mode flag for local testing
-  MOCK_MODE: true, // TODO: Set to false when enabling real Supabase integration
+  MOCK_MODE: false, // Production mode - using real Supabase integration
   
   // Pagination defaults
   DEFAULT_PAGE_SIZE: 20,
@@ -82,14 +82,14 @@ export const UI_CONFIG = {
 
 // Feature flags
 export const FEATURES = {
-  // Mock mode features
-  MOCK_AUTH: true,
-  MOCK_DATA: true,
+  // Production features - using real Supabase integration
+  MOCK_AUTH: false,
+  MOCK_DATA: false,
   
-  // Real features (disabled in mock mode)
-  REAL_TIME_UPDATES: false,
-  EMAIL_NOTIFICATIONS: false,
-  FILE_UPLOADS: false,
+  // Real features (enabled in production mode)
+  REAL_TIME_UPDATES: true,
+  EMAIL_NOTIFICATIONS: true,
+  FILE_UPLOADS: true,
   
   // UI features
   DARK_MODE: true,

@@ -1,33 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase, getCurrentUser, getUserProfile } from '@/lib/supabase'
+import { supabase, getCurrentUser, getUserProfile, upsertProfile, uploadFile } from '@/lib/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
-  // State - MOCK MODE: Always authenticated with demo user
+  // State
   const user = ref(null)
   const profile = ref(null)
-  const loading = ref(false) // Start with false since we're mocked
+  const loading = ref(true) // Start with true to handle initial auth check
   const isInitialized = ref(false)
-
-  // Mock user data
-  const MOCK_USER = {
-    id: 'mock-user-123',
-    email: 'demo@example.com',
-    user_metadata: {
-      full_name: 'Demo User',
-      avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
-    }
-  }
-
-  const MOCK_PROFILE = {
-    id: 'mock-user-123',
-    email: 'demo@example.com',
-    full_name: 'Demo User',
-    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256',
-    role: 'owner', // Give full permissions for testing
-    preferences: {},
-    social_links: {}
-  }
 
   // Computed
   const isAuthenticated = computed(() => !!user.value)
@@ -35,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userName = computed(() => profile.value?.full_name || userEmail.value || 'User')
   const userRole = computed(() => profile.value?.role || 'artist')
   const isManager = computed(() => ['manager','admin','owner'].includes(userRole.value))
-  const userAvatar = computed(() => profile.value?.avatar_url || '') // empty string instead of null
+  const userAvatar = computed(() => profile.value?.avatar_url || '')
 
   // Role-based permissions
   const canCreateArtist = computed(() => {
@@ -51,10 +31,30 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
 
-      // MOCK MODE: Immediately set mock user as authenticated
-      console.log('🎭 MOCK MODE: Auto-authenticating demo user')
-      user.value = MOCK_USER
-      profile.value = MOCK_PROFILE
+      // Get initial session
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Error getting session:', error)
+        return
+      }
+
+      if (session?.user) {
+        await setUser(session.user)
+      }
+
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          await setUser(session.user)
+        } else if (event === 'SIGNED_OUT') {
+          clearUser()
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          await setUser(session.user)
+        }
+      })
 
       isInitialized.value = true
     } catch (error) {
@@ -66,32 +66,62 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setUser = async (authUser) => {
     try {
-      user.value = authUser || MOCK_USER
-      profile.value = MOCK_PROFILE
+      user.value = authUser
+      
+      // Get or create user profile
+      let userProfile = await getUserProfile(authUser.id)
+      
+      if (!userProfile) {
+        // Create profile if it doesn't exist
+        userProfile = await createUserProfile(authUser)
+      }
+      
+      profile.value = userProfile
     } catch (error) {
       console.error('Error setting user:', error)
     }
   }
 
   const clearUser = () => {
-    // In mock mode, we don't actually clear the user
-    console.log('🎭 MOCK MODE: Clear user called, but keeping demo user authenticated')
+    user.value = null
+    profile.value = null
   }
 
   const createUserProfile = async (authUser) => {
-    // MOCK MODE: Just return the mock profile
-    return MOCK_PROFILE
+    try {
+      const profileData = {
+        id: authUser.id,
+        email: authUser.email,
+        full_name: authUser.user_metadata?.full_name || authUser.email.split('@')[0],
+        avatar_url: authUser.user_metadata?.avatar_url || null,
+        role: 'artist', // Default role
+        preferences: {},
+        social_links: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const profile = await upsertProfile(profileData)
+      return profile
+    } catch (error) {
+      console.error('Error creating user profile:', error)
+      throw error
+    }
   }
 
-  // All auth methods are mocked to work locally
+  // Authentication methods
   const signInWithMagicLink = async (email) => {
     try {
       loading.value = true
-      console.log('🎭 MOCK MODE: Magic link sign in for', email)
       
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-      profile.value = MOCK_PROFILE
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      if (error) throw error
       
       return { success: true }
     } catch (error) {
@@ -105,13 +135,15 @@ export const useAuthStore = defineStore('auth', () => {
   const signInWithPassword = async (email, password) => {
     try {
       loading.value = true
-      console.log('🎭 MOCK MODE: Password sign in for', email)
       
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-      profile.value = MOCK_PROFILE
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) throw error
       
-      return { success: true, user: MOCK_USER }
+      return { success: true, user: data.user }
     } catch (error) {
       console.error('Sign in error:', error)
       throw error
@@ -123,13 +155,19 @@ export const useAuthStore = defineStore('auth', () => {
   const signUp = async (email, password, metadata = {}) => {
     try {
       loading.value = true
-      console.log('🎭 MOCK MODE: Sign up for', email)
       
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-      profile.value = MOCK_PROFILE
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      if (error) throw error
       
-      return { success: true, user: MOCK_USER }
+      return { success: true, user: data.user }
     } catch (error) {
       console.error('Sign up error:', error)
       throw error
@@ -141,10 +179,11 @@ export const useAuthStore = defineStore('auth', () => {
   const signOut = async () => {
     try {
       loading.value = true
-      console.log('🎭 MOCK MODE: Sign out called, but staying authenticated for testing')
       
-      // In mock mode, don't actually sign out
-      // Just simulate the action
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) throw error
+      
       return true
     } catch (error) {
       console.error('Sign out error:', error)
@@ -158,24 +197,30 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (!user.value) throw new Error('No user logged in')
 
-      // MOCK MODE: Update local profile data
-      profile.value = {
+      const updatedProfile = {
         ...profile.value,
         ...updates,
         updated_at: new Date().toISOString()
       }
 
-      console.log('🎭 MOCK MODE: Profile updated locally', updates)
-      return profile.value
+      const result = await upsertProfile(updatedProfile)
+      profile.value = result
+      
+      return result
     } catch (error) {
       console.error('Profile update error:', error)
       throw error
     }
   }
 
-  const updatePassword = async (currentPassword, newPassword) => {
+  const updatePassword = async (newPassword) => {
     try {
-      console.log('🎭 MOCK MODE: Password update simulated')
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) throw error
+      
       return { success: true }
     } catch (error) {
       console.error('Password update error:', error)
@@ -186,11 +231,9 @@ export const useAuthStore = defineStore('auth', () => {
   const uploadAvatar = async (file) => {
     try {
       if (!user.value) throw new Error('No user logged in')
-
-      console.log('🎭 MOCK MODE: Avatar upload simulated for', file.name)
       
-      // Generate a mock URL
-      const publicUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=6366f1&color=fff&size=256`
+      // Upload to avatars bucket
+      const { publicUrl } = await uploadFile('avatars', file)
       
       // Update profile with new avatar URL
       await updateProfile({ avatar_url: publicUrl })
@@ -203,22 +246,38 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Artist access control helpers
-  const canAccessArtist = (_artistId) => {
-    return true // Mock mode: allow all access
+  const canAccessArtist = (artistId) => {
+    if (!isAuthenticated.value) return false
+    
+    // For now, authenticated users can access any artist
+    // This can be enhanced with proper team-based permissions
+    return true
   }
 
-  const canEditArtist = (_artistId) => {
-    return isAuthenticated.value
+  const canEditArtist = (artistId) => {
+    if (!isAuthenticated.value) return false
+    
+    // Managers and above can edit any artist
+    if (isManager.value) return true
+    
+    // Regular users can edit if they have specific permissions
+    // This would need to be checked against team memberships
+    return true
   }
 
-  const canDeleteArtist = (_artistId) => {
+  const canDeleteArtist = (artistId) => {
     return ['owner', 'admin'].includes(userRole.value)
   }
 
   // Reset password
   const resetPassword = async (email) => {
     try {
-      console.log('🎭 MOCK MODE: Password reset simulated for', email)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`
+      })
+
+      if (error) throw error
+      
       return { success: true }
     } catch (error) {
       console.error('Password reset error:', error)

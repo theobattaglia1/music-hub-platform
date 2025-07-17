@@ -1,208 +1,149 @@
-// supabase.js - MOCK MODE FOR LOCAL TESTING
-// TODO: Re-enable Supabase integration when moving to production
+// supabase.js - Production Supabase client configuration
+import { createClient } from '@supabase/supabase-js'
 
-// Mock user for local testing
-const MOCK_USER = {
-  id: 'mock-user-123',
-  email: 'demo@example.com',
-  user_metadata: {
-    full_name: 'Demo User',
-    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your .env file.')
+}
+
+// Create Supabase client with optimized configuration
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window?.localStorage
   },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-}
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'music-hub-platform'
+    }
+  }
+})
 
-// Mock user profile
-const MOCK_PROFILE = {
-  id: 'mock-user-123',
-  email: 'demo@example.com',
-  full_name: 'Demo User',
-  avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256',
-  role: 'owner',
-  preferences: {},
-  social_links: {},
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-}
-
-// Mock session
-const MOCK_SESSION = {
-  user: MOCK_USER,
-  access_token: 'mock-token',
-  refresh_token: 'mock-refresh-token'
-}
-
-// Create mock Supabase client
-const createMockSupabaseClient = () => {
-  const authCallbacks = []
-  
-  return {
-    // Auth methods
-    auth: {
-      getSession: async () => ({
-        data: { session: MOCK_SESSION },
-        error: null
-      }),
-      
-      getUser: async () => ({
-        data: { user: MOCK_USER },
-        error: null
-      }),
-      
-      signInWithPassword: async (credentials) => ({
-        data: { user: MOCK_USER, session: MOCK_SESSION },
-        error: null
-      }),
-      
-      signInWithOtp: async (options) => ({
-        data: {},
-        error: null
-      }),
-      
-      signUp: async (credentials) => ({
-        data: { user: MOCK_USER, session: MOCK_SESSION },
-        error: null
-      }),
-      
-      signOut: async () => ({
-        error: null
-      }),
-      
-      updateUser: async (attributes) => ({
-        data: { user: { ...MOCK_USER, ...attributes } },
-        error: null
-      }),
-      
-      resetPasswordForEmail: async (email, options) => ({
-        error: null
-      }),
-      
-      onAuthStateChange: (callback) => {
-        authCallbacks.push(callback)
-        // Immediately call with current session
-        setTimeout(() => callback('SIGNED_IN', MOCK_SESSION), 0)
-        return {
-          data: { subscription: { unsubscribe: () => {} } }
-        }
-      }
-    },
-    
-    // Database methods
-    from: (table) => ({
-      select: (columns = '*') => ({
-        eq: (column, value) => ({
-          single: async () => ({ data: null, error: null }),
-          data: [],
-          error: null
-        }),
-        in: (column, values) => ({ data: [], error: null }),
-        order: (column, options) => ({ data: [], error: null }),
-        limit: (count) => ({ data: [], error: null }),
-        range: (from, to) => ({ data: [], error: null }),
-        data: [],
-        error: null
-      }),
-      
-      insert: (data) => ({
-        select: (columns = '*') => ({
-          single: async () => ({
-            data: Array.isArray(data) ? data[0] : data,
-            error: null
-          }),
-          data: Array.isArray(data) ? data : [data],
-          error: null
-        }),
-        data: Array.isArray(data) ? data : [data],
-        error: null
-      }),
-      
-      update: (data) => ({
-        eq: (column, value) => ({
-          select: (columns = '*') => ({
-            single: async () => ({ data, error: null }),
-            data: [data],
-            error: null
-          }),
-          data: [data],
-          error: null
-        })
-      }),
-      
-      delete: () => ({
-        eq: (column, value) => ({
-          data: null,
-          error: null
-        })
-      }),
-      
-      upsert: (data) => ({
-        select: (columns = '*') => ({
-          single: async () => ({
-            data: Array.isArray(data) ? data[0] : data,
-            error: null
-          }),
-          data: Array.isArray(data) ? data : [data],
-          error: null
-        })
-      })
-    }),
-    
-    // Storage methods
-    storage: {
-      from: (bucket) => ({
-        upload: async (path, file, options) => ({
-          data: { path },
-          error: null
-        }),
-        
-        remove: async (paths) => ({
-          data: { message: 'Files deleted' },
-          error: null
-        }),
-        
-        getPublicUrl: (path) => ({
-          data: { 
-            publicUrl: `https://mock-storage.example.com/${bucket}/${path}` 
-          }
-        })
-      })
-    },
-    
-    // Real-time channels (mock)
-    channel: (name) => ({
-      on: (event, config, callback) => ({
-        subscribe: () => {}
-      })
-    })
+// Helper function to get the current user
+export const getCurrentUser = async () => {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error) throw error
+    return user
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
   }
 }
 
-export const supabase = createMockSupabaseClient()
-
-// Helper function to get the current user (mocked)
-export const getCurrentUser = async () => {
-  return MOCK_USER
-}
-
-// Helper function to get user profile (mocked)
+// Helper function to get user profile
 export const getUserProfile = async (userId = null) => {
-  return MOCK_PROFILE
+  try {
+    const user = userId || await getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      // If profile doesn't exist, return null (user can create one)
+      if (error.code === 'PGRST116') return null
+      throw error
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error getting user profile:', error)
+    return null
+  }
 }
 
-// Helper function to upload files (mocked)
-export const uploadFile = async (bucket, file, fileName = null) => {
-  const fileExt = file.name.split('.').pop()
-  const finalFileName = fileName || `${Math.random()}.${fileExt}`
-  
-  // Mock upload
-  const mockData = { path: finalFileName }
-  const publicUrl = `https://mock-storage.example.com/${bucket}/${finalFileName}`
-  
-  return { ...mockData, publicUrl }
+// Helper function to upload files to Supabase storage
+export const uploadFile = async (bucket, file, fileName = null, options = {}) => {
+  try {
+    const fileExt = file.name.split('.').pop()
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(2, 15)
+    const finalFileName = fileName || `${timestamp}_${randomString}.${fileExt}`
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(finalFileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+        ...options
+      })
+
+    if (error) throw error
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(finalFileName)
+
+    return { 
+      ...data, 
+      publicUrl,
+      fileName: finalFileName 
+    }
+  } catch (error) {
+    console.error('Error uploading file:', error)
+    throw error
+  }
 }
 
-// Helper function to get storage URL (mocked)
+// Helper function to get storage URL
 export const getStorageUrl = (bucket, path) => {
-  return `https://mock-storage.example.com/${bucket}/${path}`
+  const { data: { publicUrl } } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(path)
+  
+  return publicUrl
+}
+
+// Helper function to delete files from storage
+export const deleteFile = async (bucket, filePath) => {
+  try {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath])
+
+    if (error) throw error
+    
+    return true
+  } catch (error) {
+    console.error('Error deleting file:', error)
+    throw error
+  }
+}
+
+// Helper function to create or update user profile
+export const upsertProfile = async (profileData) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(profileData, {
+        onConflict: 'id',
+        returning: 'representation'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    
+    return data
+  } catch (error) {
+    console.error('Error upserting profile:', error)
+    throw error
+  }
 }
