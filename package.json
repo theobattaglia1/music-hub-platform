@@ -16,6 +16,7 @@
     "lint": "run-s lint:*"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.52.0",
     "@tanstack/vue-query": "^5.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "pinia": "^3.0.1",

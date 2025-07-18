@@ -27,11 +27,11 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 
 | Role      | Permissions                                                         |
 |-----------|---------------------------------------------------------------------|
-| Owner     | Full access                                                         |
-| Editor    | CRUD access to artist assets                                        |
-| Invoicer  | Shared pattern with accounting tool (optional integration)          |
-| Artist    | Access to their own workspace                                       |
-| Viewer    | Read-only                                                           |
+| Owner     | Full access to everything                                           |
+| Editor    | CRUD access to artist assets, team management                      |
+| Artist    | Upload content, manage their own workspace                         |
+| Viewer    | Read-only access                                                    |
+| Invoicer  | Shared pattern with accounting tool (optional integration)         |
 
 ---
 
@@ -58,31 +58,124 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 
 ---
 
-## ⚙️ Implementation Strategy
+## ⚙️ Environment Setup
 
-### Phase 1 – Foundation
-- Supabase schema creation (RLS enabled)
-- Auth extensions for music roles
-- Basic routing & dashboard shell
+### Required Environment Variables
 
-### Phase 2 – Artist Hub
-- Build `ArtistHubView.vue`
-- Integrate Pinia stores (e.g. `artistHub.js`)
-- Set up realtime data subscriptions
+Create a `.env` file in the root directory with the following variables:
 
-### Phase 3 – Feature Tabs
-- Implement CalendarTab (FullCalendar)
-- MediaTab with Supabase Storage upload
-- Team management and role controls
+```env
+# Supabase Configuration (Required)
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-### Phase 4 – Advanced Features
-- Moodboards with Fabric.js
-- Timeline and Notes with drag-and-drop
-- Deep realtime collaboration (presence, logging)
+# App Configuration
+VITE_APP_URL=https://creative.allmyfriendsinc.com
+VITE_APP_NAME=Music Hub Platform
+```
+
+### Getting Supabase Credentials
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to Settings → API
+3. Copy your Project URL and anon/public key
+4. Add them to your `.env` file
 
 ---
 
-## 🌐 Deployment Plan
+## 🗄️ Database Setup
+
+### 1. Run Database Migrations
+
+The database schema is located in `/database/migrations/`. Run these in your Supabase SQL Editor:
+
+1. **Schema Migration**: `001_comprehensive_schema.sql`
+   - Creates all tables (profiles, artists, media, events, notes, etc.)
+   - Sets up enums for user roles and content types
+   - Adds proper indexes and foreign key relationships
+   - Includes automatic profile creation trigger
+
+2. **RLS Policies**: `002_rls_policies.sql`
+   - Implements Row Level Security for multi-tenant access
+   - Sets up role-based permissions
+   - Configures automatic profile creation for new users
+
+### 2. Storage Buckets
+
+Create these storage buckets in the Supabase Dashboard:
+
+- **media** (Private) - For audio, video, documents
+- **avatars** (Public) - For user profile pictures  
+- **covers** (Public) - For album/playlist covers
+
+Then run the storage policies from the database README.
+
+### 3. Data Model Overview
+
+```
+auth.users (Supabase Auth)
+    ↓ (1:1)
+profiles (user info + role)
+    ↓ (1:many via artist_team)
+artists (band/artist profiles)
+    ↓ (1:many)
+├── media (files: audio, video, images, docs)
+├── events (calendar scheduling)
+├── notes (kanban task management)
+├── moodboard_items (visual collaboration)
+├── timeline_events (career milestones)
+└── playlists (music collections)
+
+media ↓ (1:many) file_access_logs (audit trail)
+```
+
+See `/database/README.md` for detailed schema documentation.
+
+---
+
+## 🚀 Development
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm 7+
+- Supabase account and project
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/theobattaglia1/music-hub-platform.git
+cd music-hub-platform
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase credentials
+
+# Run database migrations (see Database Setup above)
+
+# Start development server
+npm run dev
+```
+
+### Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run test         # Run tests
+npm run lint         # Run linters
+```
+
+---
+
+## 🌐 Deployment
+
+### Production Deployment via Render
 
 | Stage     | Domain                                 |
 |-----------|----------------------------------------|
@@ -90,70 +183,142 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 | Staging   | `music-staging.allmyfriendsinc.com`    |
 | Production| `creative.allmyfriendsinc.com`         |
 
-Deployed via Render using CI/CD and GitHub Actions.
+#### Render Configuration
 
-### Render Configuration
 - **Build Command:** `npm run build`
 - **Start Command:** `npm start`
+- **Environment Variables:** Set all `VITE_*` variables
 
-The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` to properly bind the preview server to all interfaces and use Render's assigned port (with fallback to 4173).
+The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` to properly bind the preview server.
+
+### Manual Deployment Steps
+
+1. **Supabase Setup:**
+   - Create project and configure environment variables
+   - Run database migrations
+   - Set up storage buckets and policies
+   - Configure auth providers if needed
+
+2. **Render.com Setup:**
+   - Connect GitHub repository
+   - Set environment variables
+   - Configure build/start commands
+   - Set up custom domain
+
+3. **Post-Deployment:**
+   - Test authentication flows
+   - Verify database connections
+   - Test file upload functionality
+   - Validate real-time features
+
+---
+
+## 🔧 Architecture
+
+### State Management
+
+- **Pinia stores** for reactive state management
+- **TanStack Vue Query** for server state and caching
+- **Real-time subscriptions** via Supabase channels
+
+### Key Stores
+
+| Store | Purpose |
+|-------|---------|
+| `enhancedAuth` | User authentication and profile management |
+| `calendar` | Event scheduling and calendar management |
+| `library` | Media file management and uploads |
+| `playlists` | Music playlist creation and management |
+| `notes` | Kanban-style task and note management |
+| `moodboards` | Visual collaboration and mood boarding |
+| `timeline` | Career timeline and milestone tracking |
+| `team` | Team member and permission management |
+| `activity` | Activity feed and audit logging |
+
+### API Layer
+
+- **apiService** - Centralized API client with retry logic
+- **Real-time subscriptions** for collaborative features
+- **File upload handling** via Supabase Storage
+- **Error handling** with proper user feedback
 
 ---
 
 ## 🧠 Key Decisions
 
 - **Calendar Library:** FullCalendar.js
-- **Moodboard Canvas:** Fabric.js
+- **Moodboard Canvas:** Fabric.js  
 - **Audio Playback:** TBD (likely Howler.js)
-- **Data Migration:** Manual JSON export from SQLite → Supabase import
+- **Database:** PostgreSQL via Supabase
+- **Authentication:** Supabase Auth with magic links
+- **Real-time:** Supabase Channels (WebSocket)
+- **File Storage:** Supabase Storage with CDN
 
 ---
 
-## 🧪 Success Metrics
+## 🧪 Testing & Quality
 
-- < 2s page load
-- Real-time updates < 100ms
+### Success Metrics
+
+- < 2s page load time
+- Real-time updates < 100ms latency
 - Fully responsive across devices
 - Zero data loss on concurrent edits
 - Presence-aware collaboration
 
----
+### Security Features
 
-## 📂 File Structure (Sample)
-
-src/
-├── components/
-│ └── MusicHub/
-│ ├── ArtistHubView.vue
-│ ├── tabs/
-│ └── modals/
-├── store/
-├── views/
-│ └── music/
-├── router/
+- Row Level Security (RLS) for multi-tenant data isolation
+- Role-based access control (RBAC)
+- File access logging and audit trails
+- Secure file upload with type validation
+- Magic link authentication (no passwords)
 
 ---
 
 ## 🔄 Migration Notes
 
+### From Desktop to Web
+
 - Desktop dependencies (Tauri, SQLite) removed
 - Data transformed for PostgreSQL
-- File access migrated to Supabase Storage
-- Realtime via Supabase channels (not IPC)
+- File access migrated to Supabase Storage  
+- Real-time via Supabase channels (not IPC)
+- Authentication moved to Supabase Auth
+
+### Data Migration Process
+
+1. Export data from SQLite desktop app
+2. Transform schema for PostgreSQL
+3. Import via Supabase SQL Editor
+4. Validate data integrity
+5. Set up proper RLS policies
 
 ---
 
 ## 🧳 Coming Soon
 
-- Sentry integration for error tracking
-- CI test pipeline
-- API usage analytics
-- Fine-grained file access logs
+- Advanced audio player with waveform visualization
+- Video streaming and annotation tools
+- Advanced moodboard templates and sharing
+- Integration with music distribution platforms
+- Advanced analytics and insights
+- Mobile app (React Native + Supabase)
 
 ---
 
-## 👋 Contributing
+## 👥 Team & Contributing
 
-This is a private internal platform. Please contact [Theo Battaglia](https://allmyfriendsinc.com) to request access or collaboration.
+This is a private internal platform for All My Friends Inc. and associated artists.
+
+For access requests or collaboration inquiries, contact:
+- **Theo Battaglia** - [theo@allmyfriendsinc.com](mailto:theo@allmyfriendsinc.com)
+- **Website:** [allmyfriendsinc.com](https://allmyfriendsinc.com)
+
+---
+
+## 📄 License
+
+Private and proprietary software. All rights reserved.
 
 ---
