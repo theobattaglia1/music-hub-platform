@@ -23,4 +23,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  preview: {
+    allowedHosts: ['music-hub-platform.onrender.com'],
+  },
 })
