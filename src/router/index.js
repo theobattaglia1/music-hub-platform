@@ -15,6 +15,10 @@ const ArtistHubView = () => import('@/views/ArtistHubView.vue')
 const MediaLibraryView = () => import('@/views/MediaLibraryView.vue')
 const CalendarView = () => import('@/views/CalendarView.vue')
 const FilesView = () => import('@/views/FilesView.vue')
+const MoodboardsView = () => import('@/views/MoodboardsView.vue')
+const TimelineView = () => import('@/views/TimelineView.vue')
+const NotesView = () => import('@/views/NotesView.vue')
+const TeamView = () => import('@/views/TeamView.vue')
 const ProfileView = () => import('@/views/ProfileView.vue')
 const PreferencesView = () => import('@/views/PreferencesView.vue')
 
@@ -101,6 +105,30 @@ const routes = [
     path: '/media',
     name: 'MediaLibrary',
     component: MediaLibraryView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/moodboards',
+    name: 'Moodboards',
+    component: MoodboardsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/timeline',
+    name: 'Timeline',
+    component: TimelineView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/notes',
+    name: 'Notes',
+    component: NotesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/team',
+    name: 'Team',
+    component: TeamView,
     meta: { requiresAuth: true }
   },
   {
