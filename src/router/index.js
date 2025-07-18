@@ -14,6 +14,7 @@ const ArtistsView = () => import('@/views/ArtistsView.vue')
 const ArtistHubView = () => import('@/views/ArtistHubView.vue')
 const MediaLibraryView = () => import('@/views/MediaLibraryView.vue')
 const CalendarView = () => import('@/views/CalendarView.vue')
+const FilesView = () => import('@/views/FilesView.vue')
 const ProfileView = () => import('@/views/ProfileView.vue')
 const PreferencesView = () => import('@/views/PreferencesView.vue')
 
@@ -89,6 +90,12 @@ const routes = [
     component: ArtistHubView,
     meta: { requiresAuth: true },
     props: true
+  },
+  {
+    path: '/files',
+    name: 'Files',
+    component: FilesView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/media',

@@ -312,6 +312,7 @@
 import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
+import { apiService } from '@/shared/services/api'
 import CreateArtistModal from '@/components/modals/CreateArtistModal.vue'
 
 const router = useRouter()
@@ -495,7 +496,8 @@ const handleArtistMenu = (artist, event) => {
 }
 
 const handleEditArtist = () => {
-  showToast({ message: 'Edit artist coming soon', type: 'info' })
+  // TODO: Open edit artist modal
+  showToast({ message: `Editing ${selectedArtist.value?.name}`, type: 'info' })
   closeContextMenu()
 }
 
@@ -507,12 +509,22 @@ const handleViewHub = () => {
 }
 
 const handleManageTeam = () => {
-  showToast({ message: 'Team management coming soon', type: 'info' })
+  // TODO: Open team management modal
+  showToast({ message: `Managing team for ${selectedArtist.value?.name}`, type: 'info' })
   closeContextMenu()
 }
 
-const handleDeleteArtist = () => {
-  showToast({ message: 'Delete artist coming soon', type: 'info' })
+const handleDeleteArtist = async () => {
+  if (selectedArtist.value && confirm(`Are you sure you want to delete "${selectedArtist.value.name}"?`)) {
+    try {
+      await apiService.delete('artists', selectedArtist.value.id)
+      artists.value = artists.value.filter(a => a.id !== selectedArtist.value.id)
+      showToast({ message: 'Artist deleted successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to delete artist:', error)
+      showToast({ message: 'Failed to delete artist', type: 'error' })
+    }
+  }
   closeContextMenu()
 }
 

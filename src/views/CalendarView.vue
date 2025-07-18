@@ -8,6 +8,13 @@
         <h2 class="current-label">{{ label }}</h2>
       </div>
       <div class="right-controls">
+        <button class="create-event-btn" @click="showCreateEvent = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Event</span>
+        </button>
         <select v-model="view" class="view-select">
           <option value="list">List</option>
           <option value="day">Day</option>
@@ -63,20 +70,133 @@
       </div>
       <div v-else class="placeholder">{{ view.toUpperCase() }} view coming soon…</div>
     </div>
+
+    <!-- Create Event Modal -->
+    <div v-if="showCreateEvent" class="modal-overlay" @click="showCreateEvent = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3 class="modal-title">Create New Event</h3>
+          <button class="modal-close" @click="showCreateEvent = false">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+        <form @submit.prevent="createEvent" class="modal-form">
+          <div class="form-group">
+            <label class="form-label">Event Title</label>
+            <input 
+              v-model="newEvent.title" 
+              type="text" 
+              class="form-input" 
+              placeholder="Enter event title"
+              required
+            />
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input 
+                v-model="newEvent.startDate" 
+                type="date" 
+                class="form-input"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Start Time</label>
+              <input 
+                v-model="newEvent.startTime" 
+                type="time" 
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input 
+                v-model="newEvent.endDate" 
+                type="date" 
+                class="form-input"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Time</label>
+              <input 
+                v-model="newEvent.endTime" 
+                type="time" 
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Artist</label>
+            <select v-model="newEvent.artist_id" class="form-select">
+              <option value="">Select an artist</option>
+              <option v-for="artist in artists" :key="artist.id" :value="artist.id">
+                {{ artist.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea 
+              v-model="newEvent.description" 
+              class="form-textarea" 
+              placeholder="Event description (optional)"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" @click="showCreateEvent = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn-create">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              Create Event
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive, inject } from 'vue'
 import { useCalendarStore } from '@/stores/calendar'
 import { useDashboardStore } from '@/stores/dashboard'
+import { apiService } from '@/shared/services/api'
 
 const calendarStore = useCalendarStore()
 const dashboardStore = useDashboardStore()
+const showToast = inject('showToast', () => {})
 
 const todayDate = ref(new Date())
 const view = ref('list')
 const artistFilter = ref('')
+const showCreateEvent = ref(false)
+
+const newEvent = reactive({
+  title: '',
+  startDate: '',
+  startTime: '',
+  endDate: '',
+  endTime: '',
+  artist_id: '',
+  description: ''
+})
 
 const artists = computed(() => dashboardStore.artists)
 
@@ -143,6 +263,50 @@ const weekDays = computed(()=>{
   return arr
 })
 
+const createEvent = async () => {
+  try {
+    const startDateTime = new Date(`${newEvent.startDate}T${newEvent.startTime}`)
+    const endDateTime = new Date(`${newEvent.endDate}T${newEvent.endTime}`)
+    
+    if (endDateTime <= startDateTime) {
+      showToast({ message: 'End time must be after start time', type: 'error' })
+      return
+    }
+
+    const eventData = {
+      title: newEvent.title,
+      start: startDateTime.toISOString(),
+      end: endDateTime.toISOString(),
+      artist_id: newEvent.artist_id || null,
+      description: newEvent.description,
+      created_at: new Date().toISOString()
+    }
+
+    const result = await apiService.create('calendar_events', eventData)
+    if (result.data) {
+      calendarStore.events.push(result.data)
+      showToast({ message: 'Event created successfully', type: 'success' })
+      showCreateEvent.value = false
+      resetEventForm()
+    }
+  } catch (error) {
+    console.error('Failed to create event:', error)
+    showToast({ message: 'Failed to create event', type: 'error' })
+  }
+}
+
+const resetEventForm = () => {
+  Object.assign(newEvent, {
+    title: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+    artist_id: '',
+    description: ''
+  })
+}
+
 onMounted(()=>{
   if (!calendarStore.events.length) calendarStore.loadEvents()
   if (dashboardStore.artists.length===0) dashboardStore.loadArtists()
@@ -155,6 +319,9 @@ onMounted(()=>{
 .nav-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:white;padding:6px 12px;margin-right:8px;border-radius:6px;cursor:pointer;}
 .nav-btn:hover{background:rgba(255,255,255,0.08);}
 .current-label{font-size:20px;font-weight:600;}
+.create-event-btn{display:flex;align-items:center;gap:8px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:#22c55e;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;margin-right:12px;}
+.create-event-btn:hover{background:rgba(34,197,94,0.2);}
+.create-event-btn svg{width:16px;height:16px;}
 .view-select,.artist-select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:white;padding:6px 12px;border-radius:6px;margin-left:8px;}
 .list-view{display:flex;flex-direction:column;gap:12px;}
 .event-row{display:grid;grid-template-columns:120px 80px 1fr 160px;gap:12px;padding:12px;border:1px solid rgba(255,255,255,0.05);border-radius:8px;background:rgba(255,255,255,0.03);}
@@ -175,4 +342,178 @@ onMounted(()=>{
 .week-day-list{flex:1;display:flex;flex-direction:column;gap:4px;font-size:12px;}
 .week-ev{color:#4ecdc4;}
 .none{color:rgba(255,255,255,0.4);}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-form {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 6px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-cancel,
+.btn-create {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.btn-create {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.btn-create:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.btn-create svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
 </style>
