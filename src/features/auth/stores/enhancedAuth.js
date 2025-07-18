@@ -1,318 +1,303 @@
 /**
- * Enhanced Auth Store with Vue Query integration - MOCK MODE FOR LOCAL TESTING
+ * Enhanced Auth Store with real Supabase integration
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-
-// Mock user data
-const MOCK_USER = {
-  id: 'mock-user-123',
-  email: 'demo@example.com',
-  user_metadata: {
-    full_name: 'Demo User',
-    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256'
-  }
-}
-
-const MOCK_PROFILE = {
-  id: 'mock-user-123',
-  email: 'demo@example.com',
-  full_name: 'Demo User',
-  avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff&size=256',
-  role: 'owner',
-  preferences: {},
-  social_links: {},
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-}
-
-const MOCK_PREFERENCES = {
-  id: 'mock-user-123',
-  theme: 'light',
-  notifications_enabled: true,
-  email_notifications: true,
-  auto_save: true
-}
+import { supabase } from '@/lib/supabase'
 
 export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
   // State
   const user = ref(null)
-  const loading = ref(false) // Start with false since we're mocked
+  const session = ref(null)
+  const loading = ref(true)
   const isInitialized = ref(false)
 
   // Get query client for cache management
   const queryClient = useQueryClient()
 
   // Computed
-  const isAuthenticated = computed(() => !!user.value)
+  const isAuthenticated = computed(() => !!user.value && !!session.value)
   const userEmail = computed(() => user.value?.email || '')
-  const userId = computed(() => user.value?.id)
+  const userId = computed(() => user.value?.id || null)
 
-  // Mock query keys for consistency
-  const mockQueryKeys = {
+  // Initialize auth state
+  const initialize = async () => {
+    if (isInitialized.value) return
+
+    try {
+      loading.value = true
+      
+      // Get current session
+      const { data: { session: currentSession }, error } = await supabase.auth.getSession()
+      
+      if (error) throw error
+
+      if (currentSession) {
+        session.value = currentSession
+        user.value = currentSession.user
+      }
+
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange(async (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.email)
+        
+        session.value = newSession
+        user.value = newSession?.user || null
+
+        if (event === 'SIGNED_IN') {
+          // Invalidate queries to refresh data
+          await queryClient.invalidateQueries()
+        } else if (event === 'SIGNED_OUT') {
+          // Clear all cached data
+          await queryClient.clear()
+        }
+      })
+
+      isInitialized.value = true
+    } catch (error) {
+      console.error('Auth initialization error:', error)
+    } finally {
+      loading.value = false
+    }
+  }
+  // Query keys for caching
+  const queryKeys = {
     user: {
       profile: (userId) => ['user', 'profile', userId?.value || userId],
       preferences: (userId) => ['user', 'preferences', userId?.value || userId]
     }
   }
 
-  // Vue Query: User Profile (mocked)
+  // Vue Query: User Profile
   const {
     data: profile,
     isLoading: profileLoading,
-    error: _profileError,
+    error: profileError,
     refetch: refetchProfile
   } = useQuery({
-    queryKey: mockQueryKeys.user.profile(userId),
+    queryKey: queryKeys.user.profile(userId),
     queryFn: async () => {
-      console.log('🎭 MOCK MODE: Fetching user profile')
-      return MOCK_PROFILE
+      if (!userId.value) return null
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId.value)
+        .single()
+      
+      if (error) throw error
+      return data
     },
     enabled: computed(() => !!userId.value),
     staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    initialData: MOCK_PROFILE
+    retry: 2
   })
 
-  // Vue Query: User Preferences (mocked)
+  // Vue Query: User Preferences (could be part of profile or separate table)
   const {
     data: preferences,
     isLoading: preferencesLoading,
     refetch: refetchPreferences
   } = useQuery({
-    queryKey: mockQueryKeys.user.preferences(userId),
+    queryKey: queryKeys.user.preferences(userId),
     queryFn: async () => {
-      console.log('🎭 MOCK MODE: Fetching user preferences')
-      return MOCK_PREFERENCES
+      // For now, return preferences from profile
+      return profile.value?.preferences || {}
     },
-    enabled: computed(() => !!userId.value),
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    initialData: MOCK_PREFERENCES
+    enabled: computed(() => !!profile.value),
+    staleTime: 15 * 60 * 1000 // 15 minutes
   })
 
   // Derived computed values
   const userName = computed(() => profile.value?.full_name || userEmail.value || 'User')
-  const userRole = computed(() => profile.value?.role || 'artist')
-  const isManager = computed(() => ['manager', 'admin', 'owner'].includes(userRole.value))
+  const userRole = computed(() => profile.value?.role || 'viewer')
+  const isManager = computed(() => ['owner', 'editor', 'artist'].includes(userRole.value))
   const userAvatar = computed(() => profile.value?.avatar_url || '')
 
   // Role-based permissions
   const canCreateArtist = computed(() => {
-    return ['owner', 'admin', 'manager'].includes(userRole.value)
+    return ['owner', 'editor'].includes(userRole.value)
   })
 
   const canManageUsers = computed(() => {
-    return ['owner', 'admin'].includes(userRole.value)
+    return ['owner'].includes(userRole.value)
   })
 
-  // Update Profile Mutation (mocked)
+  // Update Profile Mutation
   const updateProfileMutation = useMutation({
     mutationFn: async ({ profileData, avatarFile }) => {
-      console.log('🎭 MOCK MODE: Updating profile', profileData)
-      
       let updateData = { ...profileData }
 
-      // Mock avatar upload
+      // Upload avatar if provided
       if (avatarFile) {
-        updateData.avatar_url = `https://ui-avatars.com/api/?name=${encodeURIComponent(updateData.full_name || 'User')}&background=6366f1&color=fff&size=256`
+        const fileExt = avatarFile.name.split('.').pop()
+        const fileName = `${userId.value}-avatar.${fileExt}`
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, {
+            cacheControl: '3600',
+            upsert: true
+          })
+
+        if (uploadError) throw uploadError
+
+        updateData.avatar_url = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName).data.publicUrl
       }
 
-      const updatedProfile = {
-        ...MOCK_PROFILE,
-        ...updateData,
-        updated_at: new Date().toISOString()
-      }
+      // Update profile in database
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', userId.value)
+        .select()
+        .single()
 
-      // Update the local mock data
-      Object.assign(MOCK_PROFILE, updatedProfile)
-      
-      return updatedProfile
+      if (error) throw error
+      return data
     },
     onMutate: async ({ profileData }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: mockQueryKeys.user.profile(userId.value) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.profile(userId.value) })
 
       // Snapshot previous value
-      const previousProfile = queryClient.getQueryData(mockQueryKeys.user.profile(userId.value))
+      const previousProfile = queryClient.getQueryData(queryKeys.user.profile(userId.value))
 
-      // Optimistically update
-      queryClient.setQueryData(
-        mockQueryKeys.user.profile(userId.value),
-        (old) => ({ ...old, ...profileData })
-      )
+      // Optimistically update the cache
+      queryClient.setQueryData(queryKeys.user.profile(userId.value), old => ({
+        ...old,
+        ...profileData
+      }))
 
       return { previousProfile }
     },
-    onError: (err, variables, context) => {
+    onError: (err, newData, context) => {
       // Rollback on error
-      if (context?.previousProfile) {
-        queryClient.setQueryData(
-          mockQueryKeys.user.profile(userId.value),
-          context.previousProfile
-        )
-      }
-    },
-    onSuccess: (updatedProfile) => {
-      // Update cache with server response
       queryClient.setQueryData(
-        mockQueryKeys.user.profile(userId.value),
-        updatedProfile
+        queryKeys.user.profile(userId.value),
+        context.previousProfile
       )
+    },
+    onSettled: () => {
+      // Refetch after mutation
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.profile(userId.value) })
     }
   })
 
-  // Update Preferences Mutation (mocked)
-  const updatePreferencesMutation = useMutation({
-    mutationFn: async (preferencesData) => {
-      console.log('🎭 MOCK MODE: Updating preferences', preferencesData)
-      
-      const updatedPreferences = {
-        ...MOCK_PREFERENCES,
-        ...preferencesData,
-        updated_at: new Date().toISOString()
-      }
-
-      // Update the local mock data
-      Object.assign(MOCK_PREFERENCES, updatedPreferences)
-      
-      return updatedPreferences
-    },
-    onSuccess: (updatedPreferences) => {
-      queryClient.setQueryData(
-        mockQueryKeys.user.preferences(userId.value),
-        updatedPreferences
-      )
-    }
-  })
-
-  // Actions
-  const initialize = async () => {
+  // Authentication methods
+  const signIn = async (email, password) => {
     try {
       loading.value = true
-      console.log('🎭 MOCK MODE: Initializing enhanced auth with demo user')
-
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-
-      // Invalidate and refetch user-related queries
-      await Promise.all([
-        refetchProfile(),
-        refetchPreferences()
-      ])
-
-    } catch (error) {
-      console.error('Auth initialization error:', error)
-    } finally {
-      loading.value = false
-      isInitialized.value = true
-    }
-  }
-
-  const setUser = async (newUser) => {
-    user.value = newUser || MOCK_USER
-    
-    // Invalidate and refetch user-related queries
-    if (user.value?.id) {
-      await Promise.all([
-        refetchProfile(),
-        refetchPreferences()
-      ])
-    }
-  }
-
-  const clearUser = () => {
-    console.log('🎭 MOCK MODE: Clear user called, but keeping demo user authenticated')
-    // In mock mode, we don't actually clear the user for testing purposes
-  }
-
-  const signIn = async (email, password) => {
-    loading.value = true
-    try {
-      console.log('🎭 MOCK MODE: Sign in for', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
       
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-      
-      return { data: { user: MOCK_USER, session: { user: MOCK_USER } } }
+      if (error) throw error
+      return { data, error: null }
     } catch (error) {
-      console.error('Sign in error:', error)
-      throw error
+      return { data: null, error }
     } finally {
       loading.value = false
     }
   }
 
   const signUp = async (email, password, metadata = {}) => {
-    loading.value = true
     try {
-      console.log('🎭 MOCK MODE: Sign up for', email)
+      loading.value = true
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata
+        }
+      })
       
-      // Auto-authenticate with mock user
-      user.value = MOCK_USER
-      
-      return { data: { user: MOCK_USER, session: { user: MOCK_USER } } }
+      if (error) throw error
+      return { data, error: null }
     } catch (error) {
-      console.error('Sign up error:', error)
-      throw error
+      return { data: null, error }
     } finally {
       loading.value = false
     }
   }
 
   const signOut = async () => {
-    loading.value = true
     try {
-      console.log('🎭 MOCK MODE: Sign out called, but staying authenticated for testing')
-      // In mock mode, don't actually sign out
+      loading.value = true
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Clear state
+      user.value = null
+      session.value = null
+      
+      return { error: null }
     } catch (error) {
-      console.error('Sign out error:', error)
-      throw error
+      return { error }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const signInWithOtp = async (email) => {
+    try {
+      loading.value = true
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true
+        }
+      })
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
     } finally {
       loading.value = false
     }
   }
 
   const resetPassword = async (email) => {
-    console.log('🎭 MOCK MODE: Password reset simulated for', email)
-    // Mock password reset
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
   const updatePassword = async (newPassword) => {
-    console.log('🎭 MOCK MODE: Password update simulated')
-    // Mock password update
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+      
+      if (error) throw error
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
-  // Convenience methods that use mutations
-  const updateProfile = (profileData, avatarFile = null) => {
-    return updateProfileMutation.mutateAsync({ profileData, avatarFile })
-  }
-
-  const updatePreferences = (preferencesData) => {
-    return updatePreferencesMutation.mutateAsync(preferencesData)
-  }
-
-  // Artist access control helpers
-  const canAccessArtist = (_artistId) => {
-    return isAuthenticated.value
-  }
-
-  const canEditArtist = (_artistId) => {
-    return isAuthenticated.value
-  }
-
-  const canDeleteArtist = (_artistId) => {
-    return ['owner', 'admin'].includes(userRole.value)
-  }
+  // Initialize auth on store creation
+  initialize()
 
   return {
     // State
-    user: computed(() => user.value),
-    loading: computed(() => loading.value || profileLoading.value),
-    isInitialized: computed(() => isInitialized.value),
-    profile: computed(() => profile.value),
-    preferences: computed(() => preferences.value),
+    user: readonly(user),
+    session: readonly(session),
+    loading: readonly(loading),
+    isInitialized: readonly(isInitialized),
     
     // Computed
     isAuthenticated,
@@ -322,32 +307,31 @@ export const useEnhancedAuthStore = defineStore('enhancedAuth', () => {
     userRole,
     isManager,
     userAvatar,
+    
+    // Profile data
+    profile,
+    profileLoading,
+    profileError,
+    preferences,
+    preferencesLoading,
+    
+    // Permissions
     canCreateArtist,
     canManageUsers,
     
-    // Loading states
-    profileLoading: computed(() => profileLoading.value),
-    preferencesLoading: computed(() => preferencesLoading.value),
-    
-    // Mutation states
-    isUpdatingProfile: computed(() => updateProfileMutation.isPending.value),
-    isUpdatingPreferences: computed(() => updatePreferencesMutation.isPending.value),
-    
-    // Actions
+    // Methods
     initialize,
     signIn,
     signUp,
     signOut,
+    signInWithOtp,
     resetPassword,
     updatePassword,
-    updateProfile,
-    updatePreferences,
     refetchProfile,
     refetchPreferences,
     
-    // Artist permissions
-    canAccessArtist,
-    canEditArtist,
-    canDeleteArtist
+    // Mutations
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending
   }
 })
