@@ -92,6 +92,12 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 
 Deployed via Render using CI/CD and GitHub Actions.
 
+### Render Configuration
+- **Build Command:** `npm run build`
+- **Start Command:** `npm start`
+
+The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` to properly bind the preview server to all interfaces and use Render's assigned port (with fallback to 4173).
+
 ---
 
 ## 🧠 Key Decisions
