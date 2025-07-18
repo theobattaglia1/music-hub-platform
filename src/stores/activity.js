@@ -1,275 +1,366 @@
-// stores/activity.js - MOCK MODE FOR LOCAL TESTING
 import { defineStore } from 'pinia'
-import { useAuthStore } from './auth'
+import { ref, computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { apiService } from '@/shared/services/api'
 
-// Local reactive activity data
-const LOCAL_ACTIVITIES = []
+export const useActivityStore = defineStore('activity', () => {
+  const queryClient = useQueryClient()
+  const selectedArtistIds = ref([])
+  const activityTypes = ref([]) // Filter by activity types
+  const limit = ref(50)
 
-export const useActivityStore = defineStore('activity', {
-  state: () => ({
-    activities: [...LOCAL_ACTIVITIES],
-    loading: false,
-    error: null
-  }),
+  // Query keys
+  const queryKeys = {
+    activities: (artistIds = [], types = [], limit = 50) => [
+      'activities', 
+      { artistIds: artistIds.sort(), types: types.sort(), limit }
+    ]
+  }
 
-  getters: {
-    recentActivities: (state) => {
-      return state.activities
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 20)
-    },
-
-    activitiesByArtist: (state) => (artistId) => {
-      return state.activities.filter(activity => activity.artist_id === artistId)
-    },
-
-    activitiesByUser: (state) => (userId) => {
-      return state.activities.filter(activity => activity.user_id === userId)
-    }
-  },
-
-  actions: {
-    // Load activities for a specific artist or all activities
-    async loadActivities(artistId = null) {
-      this.loading = true
-      this.error = null
-
+  // Since we don't have a dedicated activity table yet, we'll use file_access_logs
+  // and other sources to create activity feed
+  const {
+    data: activities,
+    isLoading: loading,
+    error: activitiesError,
+    refetch: refetchActivities
+  } = useQuery({
+    queryKey: computed(() => queryKeys.activities(
+      selectedArtistIds.value,
+      activityTypes.value,
+      limit.value
+    )),
+    queryFn: async () => {
+      const allActivities = []
+      
       try {
-        console.log('🎭 MOCK MODE: Loading activities locally', artistId ? `for artist ${artistId}` : 'for all artists')
+        // Get file access logs as activities
+        if (selectedArtistIds.value.length === 0) {
+          // Get activities for all artists user has access to
+          const { data: userArtists } = await apiService.getArtistsByUser()
+          if (userArtists?.length) {
+            for (const artist of userArtists) {
+              await loadArtistActivities(artist.id, allActivities)
+            }
+          }
+        } else {
+          // Get activities for selected artists
+          for (const artistId of selectedArtistIds.value) {
+            await loadArtistActivities(artistId, allActivities)
+          }
+        }
         
-        // Generate some mock activities if none exist
-        if (this.activities.length === 0) {
-          this.generateMockActivities(artistId)
-        }
-
-        // Filter by artist if specified
-        let filteredActivities = this.activities
-        if (artistId) {
-          filteredActivities = this.activities.filter(activity => activity.artist_id === artistId)
-        }
-
-        return filteredActivities
-      } catch (err) {
-        console.error('Failed to load activities:', err)
-        this.error = err.message
+        // Sort by timestamp descending
+        allActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        
+        // Apply limit
+        return allActivities.slice(0, limit.value)
+      } catch (error) {
+        console.error('Failed to load activities:', error)
         return []
-      } finally {
-        this.loading = false
       }
     },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2
+  })
 
-    // Log a new activity
-    async logActivity(activity) {
-      const authStore = useAuthStore()
-
-      if (!authStore.user) {
-        console.warn('Cannot log activity: No user authenticated')
-        return null
-      }
-
-      try {
-        console.log('🎭 MOCK MODE: Logging activity locally', activity.action_type)
-
-        const activityData = {
-          id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          user_id: authStore.user.id,
-          artist_id: activity.artist_id,
-          action_type: activity.action_type,
-          target_type: activity.target_type || 'general',
-          target_id: activity.target_id,
-          description: activity.description,
-          metadata: activity.metadata || {},
-          created_at: new Date().toISOString(),
-          user: {
-            name: authStore.userName,
-            avatar_url: authStore.userAvatar
-          },
-          artist: {
-            name: 'Mock Artist',
-            slug: 'mock-artist'
-          }
-        }
-
-        // Validate required fields
-        if (!activityData.action_type) {
-          console.warn('Cannot log activity: action_type is required')
-          return null
-        }
-
-        // Add to local state
-        this.activities.unshift(activityData)
-
-        // Keep only recent activities in memory
-        if (this.activities.length > 100) {
-          this.activities = this.activities.slice(0, 100)
-        }
-
-        return activityData
-      } catch (err) {
-        console.error('Failed to log activity:', err)
-        this.error = err.message
-        return null
-      }
-    },
-
-    // Helper methods for common activities
-    async logMediaUpload(artistId, fileName, fileType) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'media_upload',
-        target_type: 'media',
-        target_id: null,
-        description: `Uploaded ${fileName}`,
-        metadata: {
-          file_name: fileName,
-          file_type: fileType,
-          upload_time: new Date().toISOString()
-        }
+  // Helper function to load activities for a specific artist
+  const loadArtistActivities = async (artistId, activitiesArray) => {
+    try {
+      // Get recent media uploads
+      const { data: recentMedia } = await apiService.getArtistMedia(artistId, {
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+        limit: 10
       })
-    },
-
-    async logEventCreated(artistId, eventId, eventName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'event_created',
-        target_type: 'event',
-        target_id: eventId,
-        description: `Created event "${eventName}"`,
-        metadata: {
-          event_name: eventName,
-          event_id: eventId
-        }
-      })
-    },
-
-    async logTeamJoined(artistId, userId, userName, role) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'team_joined',
-        target_type: 'user',
-        target_id: userId,
-        description: `${userName} joined as ${role}`,
-        metadata: {
-          user_name: userName,
-          role: role,
-          joined_at: new Date().toISOString()
-        }
-      })
-    },
-
-    async logMoodboardUpdated(artistId, moodboardId, moodboardName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'moodboard_updated',
-        target_type: 'moodboard',
-        target_id: moodboardId,
-        description: `Updated moodboard "${moodboardName}"`,
-        metadata: {
-          moodboard_name: moodboardName,
-          moodboard_id: moodboardId
-        }
-      })
-    },
-
-    async logNoteAdded(artistId, noteId, noteTitle) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'note_added',
-        target_type: 'note',
-        target_id: noteId,
-        description: `Added note "${noteTitle}"`,
-        metadata: {
-          note_title: noteTitle,
-          note_id: noteId
-        }
-      })
-    },
-
-    async logPlaylistCreated(artistId, playlistId, playlistName) {
-      return await this.logActivity({
-        artist_id: artistId,
-        action_type: 'playlist_created',
-        target_type: 'playlist',
-        target_id: playlistId,
-        description: `Created playlist "${playlistName}"`,
-        metadata: {
-          playlist_name: playlistName,
-          playlist_id: playlistId
-        }
-      })
-    },
-
-    // Initialize or fix the activity table structure (mocked)
-    async initializeActivityTable() {
-      try {
-        console.log('🎭 MOCK MODE: Activity table initialized locally')
-        return true
-      } catch (err) {
-        console.error('Failed to initialize activity table:', err)
-        return false
-      }
-    },
-
-    // Clear activities (for testing or reset)
-    clearActivities() {
-      console.log('🎭 MOCK MODE: Clearing local activities')
-      this.activities = []
-      this.error = null
-    },
-
-    // Generate mock activities for development
-    generateMockActivities(artistId, count = 10) {
-      console.log('🎭 MOCK MODE: Generating mock activities', { artistId, count })
       
-      const mockActivities = []
-      const actionTypes = [
-        'media_upload',
-        'event_created',
-        'team_joined',
-        'moodboard_updated',
-        'note_added',
-        'playlist_created'
-      ]
-
-      const descriptions = {
-        media_upload: ['Uploaded demo track', 'Added album artwork', 'Shared voice memo'],
-        event_created: ['Created studio session', 'Scheduled recording', 'Added tour date'],
-        team_joined: ['Sarah joined as producer', 'Mike joined as engineer', 'Anna joined as manager'],
-        moodboard_updated: ['Updated visual concepts', 'Added inspiration images', 'Refined color palette'],
-        note_added: ['Added songwriting idea', 'Noted production feedback', 'Saved lyric concept'],
-        playlist_created: ['Created demo collection', 'Made reference playlist', 'Organized unreleased tracks']
-      }
-
-      const mockArtistIds = artistId ? [artistId] : ['1', '2', '3']
-      
-      for (let i = 0; i < count; i++) {
-        const actionType = actionTypes[Math.floor(Math.random() * actionTypes.length)]
-        const description = descriptions[actionType][Math.floor(Math.random() * descriptions[actionType].length)]
-        const selectedArtistId = mockArtistIds[Math.floor(Math.random() * mockArtistIds.length)]
-
-        mockActivities.push({
-          id: `mock-activity-${i}`,
-          user_id: 'mock-user-123',
-          artist_id: selectedArtistId,
-          action_type: actionType,
-          target_type: actionType.split('_')[0],
-          target_id: `mock-target-${i}`,
-          description: description,
-          metadata: {},
-          created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          user: {
-            name: ['Demo User', 'Sarah Chen', 'Mike Johnson', 'Anna Rodriguez'][Math.floor(Math.random() * 4)],
-            avatar_url: null
-          },
-          artist: {
-            name: 'Mock Artist',
-            slug: 'mock-artist'
-          }
+      if (recentMedia) {
+        recentMedia.forEach(media => {
+          activitiesArray.push({
+            id: `media-${media.id}`,
+            type: 'media_upload',
+            action: 'uploaded',
+            target_type: 'media',
+            target_id: media.id,
+            description: `Uploaded ${media.title}`,
+            artist_id: artistId,
+            user_id: media.uploaded_by,
+            metadata: {
+              media_type: media.media_type,
+              file_name: media.file_name,
+              file_size: media.file_size
+            },
+            created_at: media.created_at,
+            user: null, // Will be populated by UI if needed
+            artist: null // Will be populated by UI if needed
+          })
         })
       }
 
-      this.activities = mockActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      return mockActivities
+      // Get recent events
+      const { data: recentEvents } = await apiService.getArtistEvents(artistId, {
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+        limit: 10
+      })
+      
+      if (recentEvents) {
+        recentEvents.forEach(event => {
+          activitiesArray.push({
+            id: `event-${event.id}`,
+            type: 'event_created',
+            action: 'created',
+            target_type: 'event',
+            target_id: event.id,
+            description: `Created event "${event.title}"`,
+            artist_id: artistId,
+            user_id: event.created_by,
+            metadata: {
+              event_type: event.event_type,
+              start_time: event.start_time,
+              location: event.location
+            },
+            created_at: event.created_at,
+            user: null,
+            artist: null
+          })
+        })
+      }
+
+      // Get recent notes
+      const { data: recentNotes } = await apiService.getArtistNotes(artistId, {
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+        limit: 10
+      })
+      
+      if (recentNotes) {
+        recentNotes.forEach(note => {
+          activitiesArray.push({
+            id: `note-${note.id}`,
+            type: 'note_added',
+            action: 'created',
+            target_type: 'note',
+            target_id: note.id,
+            description: `Added note "${note.title}"`,
+            artist_id: artistId,
+            user_id: note.created_by,
+            metadata: {
+              status: note.status,
+              priority: note.priority
+            },
+            created_at: note.created_at,
+            user: null,
+            artist: null
+          })
+        })
+      }
+
+      // Get recent playlists
+      const { data: recentPlaylists } = await apiService.getArtistPlaylists(artistId, {
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+        limit: 5
+      })
+      
+      if (recentPlaylists) {
+        recentPlaylists.forEach(playlist => {
+          activitiesArray.push({
+            id: `playlist-${playlist.id}`,
+            type: 'playlist_created',
+            action: 'created',
+            target_type: 'playlist',
+            target_id: playlist.id,
+            description: `Created playlist "${playlist.title}"`,
+            artist_id: artistId,
+            user_id: playlist.created_by,
+            metadata: {
+              track_count: playlist.track_ids?.length || 0,
+              is_public: playlist.is_public
+            },
+            created_at: playlist.created_at,
+            user: null,
+            artist: null
+          })
+        })
+      }
+
+    } catch (error) {
+      console.error(`Failed to load activities for artist ${artistId}:`, error)
     }
+  }
+
+  // Log activity mutation (stores in file_access_logs for now)
+  const logActivityMutation = useMutation({
+    mutationFn: async (activityData) => {
+      // For now, just log to console and API service
+      await apiService.logActivity(
+        activityData.artist_id,
+        activityData.type,
+        activityData.metadata
+      )
+      return activityData
+    },
+    onSuccess: () => {
+      // Refresh activities
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
+    }
+  })
+
+  // Computed getters
+  const recentActivities = computed(() => {
+    return activities.value?.slice(0, 20) || []
+  })
+
+  const activitiesByArtist = computed(() => {
+    return (artistId) => (activities.value || []).filter(activity => activity.artist_id === artistId)
+  })
+
+  const activitiesByUser = computed(() => {
+    return (userId) => (activities.value || []).filter(activity => activity.user_id === userId)
+  })
+
+  const activitiesByType = computed(() => {
+    return (type) => (activities.value || []).filter(activity => activity.type === type)
+  })
+
+  // Helper methods
+  const setArtistFilter = (artistIds) => {
+    selectedArtistIds.value = Array.isArray(artistIds) ? artistIds : [artistIds]
+  }
+
+  const clearArtistFilter = () => {
+    selectedArtistIds.value = []
+  }
+
+  const setActivityTypeFilter = (types) => {
+    activityTypes.value = Array.isArray(types) ? types : [types]
+  }
+
+  const clearActivityTypeFilter = () => {
+    activityTypes.value = []
+  }
+
+  const setLimit = (newLimit) => {
+    limit.value = newLimit
+  }
+
+  // Convenience methods for logging specific activities
+  const logMediaUpload = async (artistId, fileName, fileType, metadata = {}) => {
+    return logActivityMutation.mutateAsync({
+      artist_id: artistId,
+      type: 'media_upload',
+      action: 'uploaded',
+      target_type: 'media',
+      description: `Uploaded ${fileName}`,
+      metadata: {
+        file_name: fileName,
+        file_type: fileType,
+        upload_time: new Date().toISOString(),
+        ...metadata
+      }
+    })
+  }
+
+  const logEventCreated = async (artistId, eventId, eventName, metadata = {}) => {
+    return logActivityMutation.mutateAsync({
+      artist_id: artistId,
+      type: 'event_created',
+      action: 'created',
+      target_type: 'event',
+      target_id: eventId,
+      description: `Created event "${eventName}"`,
+      metadata: {
+        event_name: eventName,
+        event_id: eventId,
+        ...metadata
+      }
+    })
+  }
+
+  const logTeamJoined = async (artistId, userId, userName, role, metadata = {}) => {
+    return logActivityMutation.mutateAsync({
+      artist_id: artistId,
+      type: 'team_joined',
+      action: 'joined',
+      target_type: 'user',
+      target_id: userId,
+      description: `${userName} joined as ${role}`,
+      metadata: {
+        user_name: userName,
+        role: role,
+        joined_at: new Date().toISOString(),
+        ...metadata
+      }
+    })
+  }
+
+  const logNoteAdded = async (artistId, noteId, noteTitle, metadata = {}) => {
+    return logActivityMutation.mutateAsync({
+      artist_id: artistId,
+      type: 'note_added',
+      action: 'created',
+      target_type: 'note',
+      target_id: noteId,
+      description: `Added note "${noteTitle}"`,
+      metadata: {
+        note_title: noteTitle,
+        note_id: noteId,
+        ...metadata
+      }
+    })
+  }
+
+  const logPlaylistCreated = async (artistId, playlistId, playlistName, metadata = {}) => {
+    return logActivityMutation.mutateAsync({
+      artist_id: artistId,
+      type: 'playlist_created',
+      action: 'created',
+      target_type: 'playlist',
+      target_id: playlistId,
+      description: `Created playlist "${playlistName}"`,
+      metadata: {
+        playlist_name: playlistName,
+        playlist_id: playlistId,
+        ...metadata
+      }
+    })
+  }
+
+  return {
+    // State
+    activities: computed(() => activities.value || []),
+    loading,
+    activitiesError,
+    selectedArtistIds,
+    activityTypes,
+    limit,
+    
+    // Computed
+    recentActivities,
+    activitiesByArtist,
+    activitiesByUser,
+    activitiesByType,
+    
+    // Methods
+    refetchActivities,
+    setArtistFilter,
+    clearArtistFilter,
+    setActivityTypeFilter,
+    clearActivityTypeFilter,
+    setLimit,
+    
+    // Activity logging
+    logActivity: logActivityMutation.mutateAsync,
+    logMediaUpload,
+    logEventCreated,
+    logTeamJoined,
+    logNoteAdded,
+    logPlaylistCreated,
+    isLoggingActivity: logActivityMutation.isPending,
+    
+    // Legacy compatibility
+    loadActivities: refetchActivities,
+    clearActivities: () => queryClient.removeQueries({ queryKey: ['activities'] })
   }
 })
