@@ -1,50 +1,49 @@
 <template>
-  <div class="artists-view">
-    <!-- Elegant Header with Animated Background -->
-    <div class="view-header">
-      <div class="header-background"></div>
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="view-title">
-            <span class="title-main">Artists</span>
-            <span class="title-count">{{ filteredArtists.length }}</span>
-          </h1>
-          <p class="view-subtitle">Your creative roster</p>
-        </div>
-        <button class="create-btn" @click="handleCreateArtist">
-          <div class="btn-bg"></div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Add Artist</span>
-        </button>
-      </div>
+  <WorkspacePage
+    class="artists-view"
+    eyebrow="Artists"
+    title="Artists"
+    :count="filteredArtists.length"
+    subtitle="Your creative roster"
+  >
+    <template #actions>
+      <button class="create-btn" @click="handleCreateArtist">
+        <div class="btn-bg"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Artist</span>
+      </button>
+    </template>
 
-      <!-- Dynamic Stats Bar -->
-      <div class="stats-bar">
-        <div class="stat-item">
-          <div class="stat-value">{{ totalSongs }}</div>
-          <div class="stat-label">Total Songs</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-value">{{ activeProjects }}</div>
-          <div class="stat-label">Active Projects</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-value">{{ totalTeamMembers }}</div>
-          <div class="stat-label">Team Members</div>
-        </div>
+    <template #stats>
+      <div class="stat-item">
+        <div class="stat-value">{{ totalSongs }}</div>
+        <div class="stat-label">Total Songs</div>
       </div>
-    </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value">{{ activeProjects }}</div>
+        <div class="stat-label">Active Projects</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value">{{ totalTeamMembers }}</div>
+        <div class="stat-label">Team Members</div>
+      </div>
+    </template>
 
-    <!-- Refined Controls -->
-    <div class="controls-section">
+    <template #toolbar>
       <div class="search-container">
         <div class="search-wrapper">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="search-icon"
+          >
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
@@ -75,7 +74,13 @@
             <option value="active">Most Active</option>
             <option value="listeners">Most Listeners</option>
           </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="select-icon"
+          >
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </div>
@@ -83,9 +88,17 @@
         <div class="custom-select">
           <select v-model="filterGenre" class="filter-select">
             <option value="">All Genres</option>
-            <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
+            <option v-for="genre in availableGenres" :key="genre" :value="genre">
+              {{ genre }}
+            </option>
           </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="select-icon"
+          >
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </div>
@@ -105,13 +118,18 @@
           </button>
         </div>
       </div>
-    </div>
+    </template>
 
     <!-- Loading State -->
     <transition name="fade">
       <div v-if="loading" class="loading-state">
         <div class="loading-grid">
-          <div v-for="i in 6" :key="i" class="skeleton-card" :style="{ animationDelay: `${i * 0.1}s` }">
+          <div
+            v-for="i in 6"
+            :key="i"
+            class="skeleton-card"
+            :style="{ animationDelay: `${i * 0.1}s` }"
+          >
             <div class="skeleton-image"></div>
             <div class="skeleton-content">
               <div class="skeleton-title"></div>
@@ -142,25 +160,25 @@
             <!-- Dynamic Background Gradient -->
             <div class="card-background" :style="{ background: getArtistGradient(artist) }"></div>
 
-            <div class="artist-visual">
-              <div class="image-wrapper">
-                <img
-                  v-if="artist.avatar_url"
-                  :src="artist.avatar_url"
-                  :alt="artist.name"
-                  class="artist-image"
-                />
-                <div v-else class="artist-placeholder">
-                  <span class="placeholder-initial">{{ artist.name?.charAt(0)?.toUpperCase() }}</span>
+              <div class="artist-visual">
+                <div class="image-wrapper">
+                  <img
+                    v-if="hasCustomAvatar(artist.avatar_url)"
+                    :src="artist.avatar_url"
+                    :alt="artist.name"
+                    class="artist-image"
+                  />
+                  <div v-else class="artist-placeholder">
+                    <span class="placeholder-initial">{{ getInitials(artist.name) }}</span>
+                  </div>
                 </div>
-              </div>
 
               <!-- Hover Actions -->
               <transition name="fade">
                 <div v-if="hoveredArtist === artist.id" class="hover-actions">
                   <button class="action-btn play" @click.stop="handlePlayArtist(artist)">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
+                      <path d="M8 5v14l11-7z" />
                     </svg>
                   </button>
                 </div>
@@ -189,7 +207,9 @@
                 <span v-if="artist.genre" class="meta-tag genre">{{ artist.genre }}</span>
                 <span v-if="artist.location" class="meta-tag location">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    <path
+                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                    />
                   </svg>
                   {{ artist.location }}
                 </span>
@@ -198,13 +218,17 @@
               <div class="artist-stats">
                 <div class="stat-chip">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    <path
+                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                    />
                   </svg>
                   <span>{{ artist.song_count || 0 }}</span>
                 </div>
                 <div class="stat-chip">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    <path
+                      d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+                    />
                   </svg>
                   <span>{{ formatNumber(artist.monthly_listeners || 0) }}</span>
                 </div>
@@ -243,14 +267,27 @@
       <div v-if="!loading && filteredArtists.length === 0" class="empty-state">
         <div class="empty-illustration">
           <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="100" cy="100" r="80" stroke="currentColor" stroke-width="2" opacity="0.1"/>
-            <path d="M100 40v60M70 70l30 30 30-30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
-            <circle cx="100" cy="140" r="20" fill="currentColor" opacity="0.1"/>
+            <circle cx="100" cy="100" r="80" stroke="currentColor" stroke-width="2" opacity="0.1" />
+            <path
+              d="M100 40v60M70 70l30 30 30-30"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              opacity="0.3"
+            />
+            <circle cx="100" cy="140" r="20" fill="currentColor" opacity="0.1" />
           </svg>
         </div>
-        <h3 class="empty-title">{{ searchQuery ? 'No artists found' : 'Start building your roster' }}</h3>
+        <h3 class="empty-title">
+          {{ searchQuery ? "No artists found" : "Start building your roster" }}
+        </h3>
         <p class="empty-text">
-          {{ searchQuery ? 'Try adjusting your search or filters' : 'Add your first artist to get started' }}
+          {{
+            searchQuery
+              ? "Try adjusting your search or filters"
+              : "Add your first artist to get started"
+          }}
         </p>
         <button v-if="!searchQuery" class="create-btn large" @click="handleCreateArtist">
           <div class="btn-bg"></div>
@@ -265,34 +302,35 @@
 
     <!-- Floating Context Menu -->
     <transition name="context-menu">
-      <div
-        v-if="showContextMenu"
-        class="context-menu"
-        :style="contextMenuStyle"
-        @click.stop
-      >
+      <div v-if="showContextMenu" class="context-menu" :style="contextMenuStyle" @click.stop>
         <button class="context-item" @click="handleViewHub">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
           </svg>
           <span>View Hub</span>
         </button>
         <button class="context-item" @click="handleEditArtist">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            <path
+              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+            />
           </svg>
           <span>Edit Details</span>
         </button>
         <button class="context-item" @click="handleManageTeam">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            <path
+              d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+            />
           </svg>
           <span>Team</span>
         </button>
         <div class="context-divider"></div>
         <button class="context-item danger" @click="handleDeleteArtist">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            <path
+              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+            />
           </svg>
           <span>Delete</span>
         </button>
@@ -305,567 +343,440 @@
       @close="showCreateModal = false"
       @created="handleArtistCreated"
     />
-  </div>
+
+    <teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="showEditArtistModal"
+          class="artist-edit-overlay"
+          @click.self="closeEditArtistModal"
+        >
+          <div class="artist-edit-modal">
+            <div class="artist-edit-head">
+              <div>
+                <p class="artist-edit-eyebrow">Artist Details</p>
+                <h3>Edit Artist</h3>
+              </div>
+              <button class="artist-edit-close" @click="closeEditArtistModal">×</button>
+            </div>
+
+            <form class="artist-edit-form" @submit.prevent="saveEditedArtist">
+              <label>
+                <span>Name</span>
+                <input
+                  v-model.trim="artistEditForm.name"
+                  type="text"
+                  placeholder="Artist name"
+                  required
+                />
+              </label>
+
+              <div class="artist-edit-grid">
+                <label>
+                  <span>Genre</span>
+                  <input
+                    v-model.trim="artistEditForm.genre"
+                    type="text"
+                    placeholder="Primary genre"
+                  />
+                </label>
+                <label>
+                  <span>Location</span>
+                  <input
+                    v-model.trim="artistEditForm.location"
+                    type="text"
+                    placeholder="City, State"
+                  />
+                </label>
+              </div>
+
+              <label>
+                <span>Bio</span>
+                <textarea
+                  v-model.trim="artistEditForm.bio"
+                  rows="5"
+                  maxlength="500"
+                  placeholder="Add a short artist description"
+                ></textarea>
+              </label>
+
+              <div class="artist-edit-footer">
+                <button type="button" class="artist-secondary-btn" @click="closeEditArtistModal">
+                  Cancel
+                </button>
+                <button type="submit" class="artist-primary-btn">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div
+          v-if="showDeleteArtistModal"
+          class="artist-edit-overlay"
+          @click.self="closeDeleteArtistModal"
+        >
+          <div class="artist-edit-modal">
+            <div class="artist-edit-head">
+              <div>
+                <p class="artist-edit-eyebrow">Artist Details</p>
+                <h3>Delete Artist</h3>
+              </div>
+              <button class="artist-edit-close" @click="closeDeleteArtistModal">×</button>
+            </div>
+
+            <div class="confirm-copy">
+              <strong>{{ selectedArtist?.name }}</strong>
+              <p>This removes the artist workspace from the current roster.</p>
+            </div>
+
+            <div class="artist-edit-footer">
+              <button type="button" class="artist-secondary-btn" @click="closeDeleteArtistModal">
+                Cancel
+              </button>
+              <button type="button" class="artist-danger-btn" @click="confirmDeleteArtist">
+                Delete Artist
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+  </WorkspacePage>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject } from 'vue'
-import { useRouter } from 'vue-router'
-import { useDashboardStore } from '@/stores/dashboard'
-import { apiService } from '@/shared/services/api'
-import CreateArtistModal from '@/components/modals/CreateArtistModal.vue'
+import { ref, reactive, computed, onMounted, onUnmounted, inject } from "vue";
+import { useRouter } from "vue-router";
+import WorkspacePage from "@/components/layout/WorkspacePage.vue";
+import { useDashboardStore } from "@/stores/dashboard";
+import { usePlaybackStore } from "@/stores/playback";
+import CreateArtistModal from "@/components/modals/CreateArtistModal.vue";
+import { getInitials, hasCustomAvatar } from "@/shared/utils/avatar";
 
-const router = useRouter()
-const dashboardStore = useDashboardStore()
+const router = useRouter();
+const dashboardStore = useDashboardStore();
+const playbackStore = usePlaybackStore();
 
 // Inject global methods
-const showToast = inject('showToast', () => {})
+const showToast = inject("showToast", () => {});
 
 // State
-const loading = ref(true)
-const artists = ref([])
-const searchQuery = ref('')
-const searchFocused = ref(false)
-const sortBy = ref('name')
-const filterGenre = ref('')
-const viewMode = ref('grid')
-const showCreateModal = ref(false)
-const showContextMenu = ref(false)
-const contextMenuStyle = ref({})
-const selectedArtist = ref(null)
-const hoveredArtist = ref(null)
+const loading = ref(true);
+const artists = ref([]);
+const searchQuery = ref("");
+const searchFocused = ref(false);
+const sortBy = ref("name");
+const filterGenre = ref("");
+const viewMode = ref("grid");
+const showCreateModal = ref(false);
+const showContextMenu = ref(false);
+const contextMenuStyle = ref({});
+const selectedArtist = ref(null);
+const hoveredArtist = ref(null);
+const showEditArtistModal = ref(false);
+const showDeleteArtistModal = ref(false);
+const artistEditForm = reactive({
+  name: "",
+  genre: "",
+  location: "",
+  bio: "",
+});
 
 // View modes configuration
 const viewModes = [
-  { value: 'grid', label: 'Grid View', icon: 'M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z' },
-  { value: 'list', label: 'List View', icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z' },
-  { value: 'compact', label: 'Compact View', icon: 'M3 9h18v2H3V9zm0 4h18v2H3v-2z' }
-]
+  { value: "grid", label: "Grid View", icon: "M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" },
+  {
+    value: "list",
+    label: "List View",
+    icon: "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+  },
+  { value: "compact", label: "Compact View", icon: "M3 9h18v2H3V9zm0 4h18v2H3v-2z" },
+];
 
 // Computed
 const filteredArtists = computed(() => {
-  let result = [...artists.value]
+  let result = [...artists.value];
 
   // Search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(artist =>
-      artist.name?.toLowerCase().includes(query) ||
-      artist.genre?.toLowerCase().includes(query) ||
-      artist.location?.toLowerCase().includes(query)
-    )
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (artist) =>
+        artist.name?.toLowerCase().includes(query) ||
+        artist.genre?.toLowerCase().includes(query) ||
+        artist.location?.toLowerCase().includes(query),
+    );
   }
 
   // Genre filter
   if (filterGenre.value) {
-    result = result.filter(artist =>
-      artist.genre?.toLowerCase() === filterGenre.value.toLowerCase()
-    )
+    result = result.filter(
+      (artist) => artist.genre?.toLowerCase() === filterGenre.value.toLowerCase(),
+    );
   }
 
   // Sorting
   result.sort((a, b) => {
     switch (sortBy.value) {
-      case 'name':
-        return a.name.localeCompare(b.name)
-      case 'recent':
-        return new Date(b.created_at) - new Date(a.created_at)
-      case 'active':
-        return (b.active_tasks || 0) - (a.active_tasks || 0)
-      case 'listeners':
-        return (b.monthly_listeners || 0) - (a.monthly_listeners || 0)
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "recent":
+        return new Date(b.created_at) - new Date(a.created_at);
+      case "active":
+        return (b.active_tasks || 0) - (a.active_tasks || 0);
+      case "listeners":
+        return (b.monthly_listeners || 0) - (a.monthly_listeners || 0);
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
-  return result
-})
+  return result;
+});
 
 const availableGenres = computed(() => {
-  const genres = new Set()
-  artists.value.forEach(artist => {
-    if (artist.genre) genres.add(artist.genre)
-  })
-  return Array.from(genres).sort()
-})
+  const genres = new Set();
+  artists.value.forEach((artist) => {
+    if (artist.genre) genres.add(artist.genre);
+  });
+  return Array.from(genres).sort();
+});
 
 const totalSongs = computed(() => {
-  return artists.value.reduce((sum, artist) => sum + (artist.song_count || 0), 0)
-})
+  return artists.value.reduce((sum, artist) => sum + (artist.song_count || 0), 0);
+});
 
 const activeProjects = computed(() => {
-  return artists.value.reduce((sum, artist) => sum + (artist.active_tasks || 0), 0)
-})
+  return artists.value.reduce((sum, artist) => sum + (artist.active_tasks || 0), 0);
+});
 
 const totalTeamMembers = computed(() => {
-  const members = new Set()
-  artists.value.forEach(artist => {
-    artist.team_members?.forEach(member => members.add(member.id))
-  })
-  return members.size
-})
+  const members = new Set();
+  artists.value.forEach((artist) => {
+    artist.team_members?.forEach((member) => members.add(member.id));
+  });
+  return members.size;
+});
 
 // Methods
 const loadArtists = async () => {
   try {
-    loading.value = true
-    await dashboardStore.loadArtists()
+    loading.value = true;
+    await dashboardStore.loadArtists();
     // MOCK MODE: Add random data for demo purposes
     // In production, this data would come from the API
-    artists.value = dashboardStore.artists.map(artist => ({
+    artists.value = dashboardStore.artists.map((artist) => ({
       ...artist,
       monthly_listeners: Math.floor(Math.random() * 1000000), // Mock listener count
-      is_live: Math.random() > 0.8 // Mock live status (20% chance)
-    }))
+      is_live: Math.random() > 0.8, // Mock live status (20% chance)
+    }));
   } catch (error) {
-    console.error('Failed to load artists:', error)
-    showToast({ message: 'Failed to load artists', type: 'error' })
+    console.error("Failed to load artists:", error);
+    showToast({ message: "Failed to load artists", type: "error" });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const formatNumber = (num) => {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toString()
-}
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toString();
+};
 
 const getArtistGradient = (artist) => {
   const colors = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
-  ]
-  const index = artist.name.charCodeAt(0) % colors.length
-  return colors[index]
-}
+    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
+  ];
+  const index = artist.name.charCodeAt(0) % colors.length;
+  return colors[index];
+};
 
 const navigateToArtist = (artist) => {
-  router.push(`/artists/${artist.slug}`)
-}
+  router.push(`/artists/${artist.slug}`);
+};
 
 const handleCreateArtist = () => {
-  showCreateModal.value = true
-}
+  showCreateModal.value = true;
+};
 
-const handleArtistCreated = (artist) => {
-  // Add new artist to local state for immediate UI update
-  artists.value.push(artist)
-  showCreateModal.value = false
-  showToast({ message: 'Artist created successfully', type: 'success' })
-  // Navigate to the new artist's page for better UX
-  navigateToArtist(artist)
-}
+const handleArtistCreated = async (artistData, avatarFile) => {
+  try {
+    const createdArtist = await dashboardStore.createArtist(artistData, avatarFile);
+    showCreateModal.value = false;
+    await loadArtists();
+    showToast({ message: `Created ${createdArtist.name}`, type: "success" });
+    navigateToArtist(createdArtist);
+  } catch (error) {
+    console.error("Failed to create artist:", error);
+    showToast({ message: "Failed to create artist", type: "error" });
+  }
+};
 
 const handlePlayArtist = (artist) => {
-  showToast({ message: `Playing ${artist.name}'s music`, type: 'info' })
-  // TODO: Implement actual music playback functionality
-  // This would integrate with the music player component
-}
+  const demoSongs = Array.from({ length: Math.max(artist.song_count || 0, 1) }, (_, index) => ({
+    id: `${artist.id}-track-${index + 1}`,
+    name: `${artist.name} Track ${index + 1}`,
+    artist: artist.name,
+    artist_id: artist.id,
+    duration: 180 + index * 12,
+  }));
+  playbackStore.playArtist(artist, demoSongs);
+  showToast({ message: `Playing ${artist.name}`, type: "success" });
+};
 
 const handleArtistMenu = (artist, event) => {
-  event.preventDefault()
-  selectedArtist.value = artist
+  event.preventDefault();
+  selectedArtist.value = artist;
 
-  const rect = event.currentTarget.getBoundingClientRect()
-  const menuWidth = 200
-  const menuHeight = 200
+  const rect = event.currentTarget.getBoundingClientRect();
+  const menuWidth = 200;
+  const menuHeight = 200;
 
-  let top = rect.bottom + 8
-  let left = rect.left
+  let top = rect.bottom + 8;
+  let left = rect.left;
 
   // Adjust if menu would go off screen
   if (left + menuWidth > window.innerWidth) {
-    left = rect.right - menuWidth
+    left = rect.right - menuWidth;
   }
   if (top + menuHeight > window.innerHeight) {
-    top = rect.top - menuHeight - 8
+    top = rect.top - menuHeight - 8;
   }
 
   contextMenuStyle.value = {
     top: `${top}px`,
-    left: `${left}px`
-  }
+    left: `${left}px`,
+  };
 
-  showContextMenu.value = true
-}
+  showContextMenu.value = true;
+};
+
+const openEditArtistModal = (artist = selectedArtist.value) => {
+  if (!artist) return;
+  selectedArtist.value = artist;
+  artistEditForm.name = artist.name || "";
+  artistEditForm.genre = artist.genre || "";
+  artistEditForm.location = artist.location || "";
+  artistEditForm.bio = artist.bio || "";
+  showEditArtistModal.value = true;
+};
+
+const closeEditArtistModal = () => {
+  showEditArtistModal.value = false;
+  artistEditForm.name = "";
+  artistEditForm.genre = "";
+  artistEditForm.location = "";
+  artistEditForm.bio = "";
+  selectedArtist.value = null;
+};
 
 const handleEditArtist = () => {
-  // TODO: Open edit artist modal
-  showToast({ message: `Editing ${selectedArtist.value?.name}`, type: 'info' })
-  closeContextMenu()
-}
+  if (!selectedArtist.value) return;
+  openEditArtistModal(selectedArtist.value);
+  closeContextMenu({ preserveArtist: true });
+};
+
+const saveEditedArtist = async () => {
+  if (!selectedArtist.value) return;
+
+  const name = artistEditForm.name.trim();
+  if (!name) return;
+
+  try {
+    await dashboardStore.updateArtist(selectedArtist.value.id, {
+      name,
+      genre: artistEditForm.genre.trim(),
+      location: artistEditForm.location.trim(),
+      bio: artistEditForm.bio.trim(),
+    });
+    await loadArtists();
+    showToast({ message: `Updated ${name}`, type: "success" });
+  } catch (error) {
+    console.error("Failed to update artist:", error);
+    showToast({ message: "Failed to update artist", type: "error" });
+  } finally {
+    closeEditArtistModal();
+  }
+};
 
 const handleViewHub = () => {
   if (selectedArtist.value) {
-    navigateToArtist(selectedArtist.value)
+    navigateToArtist(selectedArtist.value);
   }
-  closeContextMenu()
-}
+  closeContextMenu();
+};
 
 const handleManageTeam = () => {
-  // TODO: Open team management modal
-  showToast({ message: `Managing team for ${selectedArtist.value?.name}`, type: 'info' })
-  closeContextMenu()
-}
+  router.push("/team");
+  closeContextMenu();
+};
 
 const handleDeleteArtist = async () => {
-  if (selectedArtist.value && confirm(`Are you sure you want to delete "${selectedArtist.value.name}"?`)) {
-    try {
-      await apiService.delete('artists', selectedArtist.value.id)
-      artists.value = artists.value.filter(a => a.id !== selectedArtist.value.id)
-      showToast({ message: 'Artist deleted successfully', type: 'success' })
-    } catch (error) {
-      console.error('Failed to delete artist:', error)
-      showToast({ message: 'Failed to delete artist', type: 'error' })
-    }
-  }
-  closeContextMenu()
-}
+  if (!selectedArtist.value) return;
+  showDeleteArtistModal.value = true;
+  closeContextMenu();
+};
 
-const closeContextMenu = () => {
-  showContextMenu.value = false
-  selectedArtist.value = null
-}
+const closeDeleteArtistModal = () => {
+  showDeleteArtistModal.value = false;
+};
+
+const confirmDeleteArtist = async () => {
+  if (!selectedArtist.value) return;
+
+  try {
+    await dashboardStore.deleteArtist(selectedArtist.value.id);
+    await loadArtists();
+    showToast({ message: "Artist deleted successfully", type: "success" });
+  } catch (error) {
+    console.error("Failed to delete artist:", error);
+    showToast({ message: "Failed to delete artist", type: "error" });
+  } finally {
+    showDeleteArtistModal.value = false;
+    selectedArtist.value = null;
+  }
+};
+
+const closeContextMenu = ({ preserveArtist = false } = {}) => {
+  showContextMenu.value = false;
+  if (!preserveArtist) {
+    selectedArtist.value = null;
+  }
+};
 
 // Click outside handler for context menu accessibility
 const handleClickOutside = (event) => {
-  if (showContextMenu.value && !event.target.closest('.context-menu')) {
-    closeContextMenu()
+  if (showContextMenu.value && !event.target.closest(".context-menu")) {
+    closeContextMenu();
   }
-}
+};
 
 // Lifecycle - Clean setup and teardown
 onMounted(() => {
-  loadArtists()
+  loadArtists();
   // Add click outside listener for context menu - using passive for better performance
-  document.addEventListener('click', handleClickOutside, { passive: true })
-})
+  document.addEventListener("click", handleClickOutside, { passive: true });
+});
 
 onUnmounted(() => {
   // Always clean up event listeners to prevent memory leaks
-  document.removeEventListener('click', handleClickOutside)
-})
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>
 .artists-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #000;
-  color: white;
-  overflow: hidden;
-}
-
-/* Header Section */
-.view-header {
-  position: relative;
-  padding: 48px 48px 0;
-  margin-bottom: 32px;
-}
-
-.header-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 200%;
-  background: radial-gradient(ellipse at top, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
-  pointer-events: none;
-  animation: pulse 20s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.1); }
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  position: relative;
-  z-index: 1;
-}
-
-.title-section {
-  flex: 1;
-}
-
-.view-title {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  font-size: 48px;
-  font-weight: 200;
-  letter-spacing: -0.02em;
-  margin: 0 0 8px;
-}
-
-.title-count {
-  font-size: 24px;
-  color: rgba(255, 255, 255, 0.3);
-  font-weight: 300;
-}
-
-.view-subtitle {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-/* Create Button */
-.create-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+  min-height: 100%;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 100px;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.create-btn:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-}
-
-.create-btn.large {
-  padding: 16px 32px;
-  font-size: 16px;
-}
-
-.btn-bg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.create-btn:hover .btn-bg {
-  width: 200%;
-  height: 200%;
-}
-
-.create-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Stats Bar */
-.stats-bar {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Controls Section */
-.controls-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 48px;
-  margin-bottom: 32px;
-  gap: 32px;
-}
-
-.search-container {
-  flex: 1;
-  max-width: 500px;
-}
-
-.search-wrapper {
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 14px 48px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: rgba(255, 255, 255, 0.3);
-  pointer-events: none;
-}
-
-.clear-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all 0.2s;
-  border-radius: 50%;
-}
-
-.clear-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.clear-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Filter Group */
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.custom-select {
-  position: relative;
-}
-
-.filter-select {
-  padding: 10px 40px 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  appearance: none;
-  transition: all 0.2s;
-  min-width: 140px;
-}
-
-.filter-select:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
-}
-
-.select-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-}
-
-/* View Toggles */
-.view-toggles {
-  display: flex;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 2px;
-}
-
-.view-toggle {
-  width: 36px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.view-toggle:hover {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.view-toggle.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.view-toggle svg {
-  width: 18px;
-  height: 18px;
+  color: var(--color-text);
 }
 
 /* Loading State */
@@ -877,7 +788,7 @@ onUnmounted(() => {
 
 .loading-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 24px;
 }
 
@@ -890,15 +801,25 @@ onUnmounted(() => {
 }
 
 @keyframes skeletonWave {
-  0% { opacity: 0.5; transform: translateX(-3px); }
-  50% { opacity: 1; transform: translateX(3px); }
-  100% { opacity: 0.5; transform: translateX(-3px); }
+  0% {
+    opacity: 0.5;
+    transform: translateX(-3px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+  100% {
+    opacity: 0.5;
+    transform: translateX(-3px);
+  }
 }
 
 .skeleton-image {
   width: 100%;
   height: 240px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     rgba(255, 255, 255, 0.03) 25%,
     rgba(255, 255, 255, 0.05) 50%,
     rgba(255, 255, 255, 0.03) 75%
@@ -908,8 +829,12 @@ onUnmounted(() => {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-content {
@@ -953,7 +878,7 @@ onUnmounted(() => {
 
 .artists-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 24px;
 }
 
@@ -963,7 +888,7 @@ onUnmounted(() => {
 }
 
 .artists-container.compact .artists-grid {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -1054,13 +979,18 @@ onUnmounted(() => {
 }
 
 .placeholder-initial {
-  font-size: 64px;
-  font-weight: 200;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--placeholder-initial-card);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.06em;
   color: rgba(255, 255, 255, 0.3);
 }
 
 .list .placeholder-initial {
-  font-size: 36px;
+  font-size: var(--placeholder-initial-avatar);
 }
 
 /* Hover Actions */
@@ -1124,8 +1054,15 @@ onUnmounted(() => {
 }
 
 @keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
 }
 
 .live-text {
@@ -1219,9 +1156,9 @@ onUnmounted(() => {
 }
 
 .meta-tag.genre {
-  background: rgba(168, 85, 247, 0.1);
-  border-color: rgba(168, 85, 247, 0.2);
-  color: rgba(168, 85, 247, 0.9);
+  background: rgba(232, 90, 25, 0.08);
+  border-color: rgba(232, 90, 25, 0.18);
+  color: var(--color-accent);
 }
 
 .meta-tag svg {
@@ -1250,9 +1187,9 @@ onUnmounted(() => {
 }
 
 .stat-chip.active {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
-  color: rgba(34, 197, 94, 0.9);
+  background: rgba(232, 90, 25, 0.1);
+  border-color: rgba(232, 90, 25, 0.2);
+  color: var(--color-accent);
 }
 
 .stat-chip svg {
@@ -1451,74 +1388,269 @@ onUnmounted(() => {
 /* Responsive */
 @media (max-width: 1200px) {
   .artists-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .view-header {
-    padding: 32px 24px 0;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .view-title {
-    font-size: 36px;
-  }
-
-  .stats-bar {
-    gap: 24px;
-  }
-
-  .controls-section {
-    flex-direction: column;
-    padding: 0 24px;
-    gap: 16px;
-  }
-
-  .search-container {
-    max-width: none;
-  }
-
-  .filter-group {
-    width: 100%;
-    justify-content: space-between;
-  }
-
   .artists-container {
     padding: 0 24px 24px;
   }
 
   .artists-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap: 16px;
   }
 }
 
 @media (max-width: 480px) {
-  .view-title {
-    font-size: 28px;
-  }
-
-  .stats-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .stat-divider {
-    display: none;
-  }
-
-  .filter-group {
-    flex-wrap: wrap;
-  }
-
   .artists-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.artist-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(22px);
+}
+
+.artist-edit-modal {
+  width: min(560px, calc(100vw - 32px));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(10, 10, 12, 0.96);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.45);
+  padding: 28px;
+}
+
+.artist-edit-head,
+.artist-edit-grid,
+.artist-edit-footer {
+  display: flex;
+  gap: 14px;
+}
+
+.artist-edit-head {
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.artist-edit-eyebrow {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.artist-edit-head h3 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.artist-edit-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.artist-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.artist-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.artist-edit-form span {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.artist-edit-form input,
+.artist-edit-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  padding: 14px 16px;
+  font: inherit;
+  resize: vertical;
+}
+
+.artist-edit-form input:focus,
+.artist-edit-form textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.artist-edit-grid {
+  align-items: stretch;
+}
+
+.artist-edit-grid label {
+  flex: 1;
+}
+
+.artist-edit-footer {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.artist-secondary-btn,
+.artist-primary-btn,
+.artist-danger-btn {
+  border-radius: 999px;
+  padding: 12px 18px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.artist-secondary-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.artist-primary-btn {
+  border: 0;
+  background: #fff;
+  color: #050505;
+  font-weight: 600;
+}
+
+.artist-danger-btn {
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+  font-weight: 600;
+}
+
+.confirm-copy {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.confirm-copy strong {
+  display: block;
+  font-size: 18px;
+}
+
+.confirm-copy p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+@media (max-width: 640px) {
+  .artist-edit-modal {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .artist-edit-grid,
+  .artist-edit-footer {
+    flex-direction: column;
+  }
+
+  .artist-primary-btn,
+  .artist-secondary-btn {
+    width: 100%;
+  }
+}
+
+/* Theme override */
+.artists-view {
+  color: var(--color-text);
+  background: transparent;
+}
+
+.artists-view .artist-card,
+.artists-view .empty-state {
+  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.76)),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.artists-view .artist-edit-modal {
+  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.76)),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-overlay);
+}
+
+.artists-view .artist-meta,
+.artists-view .artist-location,
+.artists-view .artist-bio,
+.artists-view .confirm-copy p {
+  color: var(--color-text-secondary);
+}
+
+.artists-view .meta-tag {
+  border-color: rgba(19, 18, 17, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
+  box-shadow: none;
+}
+
+.artists-view .meta-tag.genre {
+  border-color: rgba(200, 75, 17, 0.18);
+  background: rgba(200, 75, 17, 0.08);
+  color: var(--color-accent);
+}
+
+.artists-view .stat-chip {
+  border-color: rgba(19, 18, 17, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
+  box-shadow: none;
+}
+
+.artists-view .stat-chip.active {
+  border-color: rgba(232, 90, 25, 0.22);
+  background: rgba(232, 90, 25, 0.08);
+  color: var(--color-accent);
+}
+
+.artists-view .meta-tag svg,
+.artists-view .stat-chip svg {
+  color: currentColor;
+}
+
+.artists-view .artist-name,
+.artists-view .artist-name-text,
+.artists-view .confirm-copy strong {
+  color: var(--color-text);
 }
 </style>

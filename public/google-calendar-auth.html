@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connecting Google Calendar…</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family:
+          "SF Pro Display",
+          "Inter",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #f3f0ea;
+        color: #131211;
+      }
+
+      .status {
+        width: min(420px, 100%);
+        padding: 24px;
+        border-radius: 24px;
+        border: 1px solid rgba(19, 18, 17, 0.08);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 18px 48px rgba(19, 18, 17, 0.12);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        color: rgba(19, 18, 17, 0.66);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="status">
+      <h1>Connecting Google Calendar…</h1>
+      <p>You can close this window if it doesn’t close automatically.</p>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const payload = {
+          type: "music-hub-google-calendar-auth",
+          code: params.get("code") || "",
+          state: params.get("state") || "",
+          error: params.get("error") || "",
+          error_description: params.get("error_description") || "",
+        };
+
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, window.location.origin);
+          window.close();
+        }
+      })();
+    </script>
+  </body>
+</html>

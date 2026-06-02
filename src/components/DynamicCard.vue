@@ -8,8 +8,8 @@
       {
         'card-interactive': interactive,
         'card-selected': selected,
-        'card-draggable': draggable
-      }
+        'card-draggable': draggable,
+      },
     ]"
     @click="handleClick"
     @contextmenu.prevent="handleContextMenu"
@@ -44,10 +44,10 @@
           :class="{ 'play-active': isPlaying }"
         >
           <svg v-if="isPlaying" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
           </svg>
           <svg v-else viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
+            <path d="M8 5v14l11-7z" />
           </svg>
         </button>
 
@@ -59,7 +59,9 @@
             :class="{ active: isFavorite }"
           >
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
             </svg>
           </button>
 
@@ -69,7 +71,9 @@
             class="overlay-btn more-btn"
           >
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+              <path
+                d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
+              />
             </svg>
           </button>
         </div>
@@ -80,12 +84,16 @@
         <div v-if="isOnline" class="status-indicator online" title="Online"></div>
         <div v-if="isNew" class="status-indicator new" title="New">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            <path
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            />
           </svg>
         </div>
         <div v-if="isPrivate" class="status-indicator private" title="Private">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+            <path
+              d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"
+            />
           </svg>
         </div>
       </div>
@@ -118,7 +126,7 @@
           :class="`metadata-${meta.type}`"
         >
           <svg v-if="meta.icon" viewBox="0 0 24 24" fill="currentColor">
-            <path :d="meta.icon"/>
+            <path :d="meta.icon" />
           </svg>
           <span>{{ meta.value }}</span>
         </div>
@@ -126,11 +134,7 @@
 
       <!-- Tags -->
       <div v-if="tags.length > 0" class="card-tags">
-        <span
-          v-for="tag in visibleTags"
-          :key="tag"
-          class="card-tag"
-        >
+        <span v-for="tag in visibleTags" :key="tag" class="card-tag">
           {{ tag }}
         </span>
       </div>
@@ -146,7 +150,7 @@
           :title="action.tooltip"
         >
           <svg v-if="action.icon" viewBox="0 0 24 24" fill="currentColor">
-            <path :d="action.icon"/>
+            <path :d="action.icon" />
           </svg>
           <span v-if="action.label">{{ action.label }}</span>
         </button>
@@ -156,11 +160,7 @@
     <!-- Selection Checkbox -->
     <div v-if="selectable" class="card-selection">
       <label class="selection-checkbox">
-        <input
-          type="checkbox"
-          :checked="selected"
-          @change="$emit('toggle-selection', item)"
-        />
+        <input type="checkbox" :checked="selected" @change="$emit('toggle-selection', item)" />
         <span class="checkbox-visual"></span>
       </label>
     </div>
@@ -168,217 +168,241 @@
 </template>
 
 <script setup>
-import { computed, inject, h } from 'vue'
+import { computed, inject, h } from "vue";
 
 // Props
 const props = defineProps({
   // Item data
   item: {
     type: Object,
-    required: true
+    required: true,
   },
 
   // Display properties
   title: {
     type: String,
-    required: true
+    required: true,
   },
   subtitle: String,
   coverImage: String,
   showCoverPlaceholder: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showInitial: {
     type: Boolean,
-    default: true
+    default: true,
   },
 
   // Card configuration
   variant: {
     type: String,
-    default: 'default', // 'default', 'compact', 'list', 'hero'
-    validator: (value) => ['default', 'compact', 'list', 'hero'].includes(value)
+    default: "default", // 'default', 'compact', 'list', 'hero'
+    validator: (value) => ["default", "compact", "list", "hero"].includes(value),
   },
   size: {
     type: String,
-    default: 'medium', // 'small', 'medium', 'large'
-    validator: (value) => ['small', 'medium', 'large'].includes(value)
+    default: "medium", // 'small', 'medium', 'large'
+    validator: (value) => ["small", "medium", "large"].includes(value),
   },
 
   // Interaction
   interactive: {
     type: Boolean,
-    default: true
+    default: true,
   },
   selectable: {
     type: Boolean,
-    default: false
+    default: false,
   },
   selected: {
     type: Boolean,
-    default: false
+    default: false,
   },
   draggable: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   // Status
   isPlaying: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isFavorite: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isOnline: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isNew: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isPrivate: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   // Content
   badge: Object, // { text: string, type: string }
   metadata: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   tags: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   actions: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
 
   // Button visibility
   showPlayButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showFavoriteButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showMoreButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
 
   // Colors
   accentColor: String,
-  placeholderColor: String
-})
+  placeholderColor: String,
+});
 
 // Emits
 const emit = defineEmits([
-  'click',
-  'contextmenu',
-  'play',
-  'favorite',
-  'more',
-  'action',
-  'toggle-selection',
-  'drag-start'
-])
+  "click",
+  "contextmenu",
+  "play",
+  "favorite",
+  "more",
+  "action",
+  "toggle-selection",
+  "drag-start",
+]);
 
 // Injected services
-const showToast = inject('showToast', () => {})
+const showToast = inject("showToast", () => {});
 
 // Computed
 const hasIndicators = computed(() => {
-  return props.isOnline || props.isNew || props.isPrivate
-})
+  return props.isOnline || props.isNew || props.isPrivate;
+});
 
 const placeholderStyle = computed(() => {
-  const color = props.placeholderColor || props.accentColor || '#1db954'
+  const color = props.placeholderColor || props.accentColor || "#e85a19";
   return {
-    background: `linear-gradient(135deg, ${color}, ${adjustColor(color, -20)})`
-  }
-})
+    background: `linear-gradient(135deg, ${color}, ${adjustColor(color, -20)})`,
+  };
+});
 
 const visibleMetadata = computed(() => {
   // Limit metadata items based on card size
-  const limits = { small: 2, medium: 3, large: 5 }
-  const limit = limits[props.size] || 3
-  return props.metadata.slice(0, limit)
-})
+  const limits = { small: 2, medium: 3, large: 5 };
+  const limit = limits[props.size] || 3;
+  return props.metadata.slice(0, limit);
+});
 
 const visibleTags = computed(() => {
   // Limit tags based on card size
-  const limits = { small: 2, medium: 4, large: 6 }
-  const limit = limits[props.size] || 4
-  return props.tags.slice(0, limit)
-})
+  const limits = { small: 2, medium: 4, large: 6 };
+  const limit = limits[props.size] || 4;
+  return props.tags.slice(0, limit);
+});
 
 // Methods
 const handleClick = (event) => {
   if (props.interactive) {
-    emit('click', props.item, event)
+    emit("click", props.item, event);
   }
-}
+};
 
 const handleContextMenu = (event) => {
-  emit('contextmenu', props.item, event)
-}
+  emit("contextmenu", props.item, event);
+};
 
 const handleDragStart = (event) => {
   if (props.draggable) {
-    emit('drag-start', props.item, event)
+    emit("drag-start", props.item, event);
   }
-}
+};
 
 const handleImageError = (event) => {
-  event.target.style.display = 'none'
-}
+  event.target.style.display = "none";
+};
 
 const handleImageLoad = (event) => {
-  event.target.style.opacity = '1'
-}
+  event.target.style.opacity = "1";
+};
 
 const toggleFavorite = () => {
-  emit('favorite', props.item, !props.isFavorite)
+  emit("favorite", props.item, !props.isFavorite);
   showToast({
-    message: props.isFavorite ? 'Removed from favorites' : 'Added to favorites',
-    type: 'success'
-  })
-}
+    message: props.isFavorite ? "Removed from favorites" : "Added to favorites",
+    type: "success",
+  });
+};
 
 const getPlaceholderIcon = () => {
   // Return appropriate icon based on item type
   const iconMap = {
-    song: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' })),
-    artist: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z' })),
-    playlist: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z' })),
-    album: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z' }))
-  }
+    song: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z",
+        }),
+      ),
+    artist: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z",
+        }),
+      ),
+    playlist: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z",
+        }),
+      ),
+    album: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z",
+        }),
+      ),
+  };
 
-  const type = props.item?.type || 'song'
-  return iconMap[type] || iconMap.song
-}
+  const type = props.item?.type || "song";
+  return iconMap[type] || iconMap.song;
+};
 
 const adjustColor = (color, amount) => {
   // Simple color adjustment utility
-  const hex = color.replace('#', '')
-  const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount))
-  const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount))
-  const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount))
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
+  const hex = color.replace("#", "");
+  const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+};
 </script>
 
 <style scoped>
@@ -446,7 +470,7 @@ const adjustColor = (color, amount) => {
 
 .card-selected {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+  box-shadow: 0 0 0 2px rgba(232, 90, 25, 0.22);
 }
 
 .card-draggable:active {
@@ -620,15 +644,15 @@ const adjustColor = (color, amount) => {
 }
 
 .status-indicator.online {
-  background: #10b981;
+  background: var(--color-accent);
 }
 
 .status-indicator.new {
-  background: #f59e0b;
+  background: var(--color-danger);
 }
 
 .status-indicator.private {
-  background: #8b5cf6;
+  background: var(--color-info);
 }
 
 .status-indicator svg {
@@ -707,12 +731,12 @@ const adjustColor = (color, amount) => {
 }
 
 .badge-success {
-  background: #10b981;
+  background: var(--color-accent);
   color: white;
 }
 
 .badge-warning {
-  background: #f59e0b;
+  background: var(--color-warning);
   color: white;
 }
 
@@ -835,7 +859,7 @@ const adjustColor = (color, amount) => {
 }
 
 .selection-checkbox input:checked + .checkbox-visual::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 6px;
   top: 3px;

@@ -9,20 +9,16 @@
             type="text"
             placeholder="Search songs..."
             class="search-input"
-          >
+          />
           <svg v-if="!isSearching" class="search-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.24c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path
+              d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.24c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+            />
           </svg>
           <div v-else class="search-spinner"></div>
         </div>
-        
-        <button
-          v-if="searchQuery"
-          @click="clearSearch"
-          class="clear-search-btn"
-        >
-          Clear
-        </button>
+
+        <button v-if="searchQuery" @click="clearSearch" class="clear-search-btn">Clear</button>
       </div>
 
       <div class="controls-section">
@@ -31,10 +27,10 @@
           <button @click="sortDropdownOpen = !sortDropdownOpen" class="sort-btn">
             Sort: {{ getSortLabel() }}
             <svg class="dropdown-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 10l5 5 5-5z"/>
+              <path d="M7 10l5 5 5-5z" />
             </svg>
           </button>
-          
+
           <div v-if="sortDropdownOpen" class="dropdown-menu">
             <button
               v-for="option in sortOptions"
@@ -57,7 +53,9 @@
             title="List view"
           >
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+              <path
+                d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+              />
             </svg>
           </button>
           <button
@@ -67,7 +65,9 @@
             title="Grid view"
           >
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"/>
+              <path
+                d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"
+              />
             </svg>
           </button>
         </div>
@@ -75,9 +75,7 @@
         <!-- Selection info -->
         <div v-if="hasSelection" class="selection-info">
           {{ selectedCount }} selected
-          <button @click="deselectAll" class="deselect-btn">
-            Clear
-          </button>
+          <button @click="deselectAll" class="deselect-btn">Clear</button>
         </div>
       </div>
     </div>
@@ -91,7 +89,9 @@
     <!-- Empty state -->
     <div v-else-if="!isLoading && !songs.length" class="empty-state">
       <svg class="empty-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        <path
+          d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+        />
       </svg>
       <h3>No songs found</h3>
       <p v-if="searchQuery">Try adjusting your search terms</p>
@@ -114,13 +114,13 @@
       >
         <template #item="{ item: song, index }">
           <div class="track-item-wrapper">
-            <div 
+            <div
               :class="[
                 'track-item',
                 {
                   'track-item--selected': isSelected(song),
-                  'track-item--playing': currentSong?.id === song.id
-                }
+                  'track-item--playing': currentSong?.id === song.id,
+                },
               ]"
               @click="toggle(song)"
               @dblclick="handlePlay(song)"
@@ -153,8 +153,8 @@
             'track-grid-item',
             {
               'track-grid-item--selected': isSelected(song),
-              'track-grid-item--playing': currentSong?.id === song.id
-            }
+              'track-grid-item--playing': currentSong?.id === song.id,
+            },
           ]"
           @click="toggle(song)"
           @dblclick="handlePlay(song)"
@@ -171,7 +171,9 @@
             />
             <div v-else class="track-cover-placeholder">
               <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                <path
+                  d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                />
               </svg>
             </div>
           </div>
@@ -180,16 +182,12 @@
             <div class="track-artist">{{ song.artist?.name }}</div>
           </div>
         </div>
-        
+
         <!-- Load more button for grid -->
         <div v-if="hasNext" class="load-more-section">
-          <button
-            @click="loadMore"
-            :disabled="isLoadingMore"
-            class="load-more-btn"
-          >
+          <button @click="loadMore" :disabled="isLoadingMore" class="load-more-btn">
             <div v-if="isLoadingMore" class="loading-spinner"></div>
-            {{ isLoadingMore ? 'Loading...' : 'Load More' }}
+            {{ isLoadingMore ? "Loading..." : "Load More" }}
           </button>
         </div>
       </div>
@@ -198,48 +196,48 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { storeToRefs } from 'pinia'
-import VirtualizedList from '@/shared/components/VirtualizedList.vue'
-import OptimizedImage from '@/shared/components/OptimizedImage.vue'
-import { useSongs } from '@/features/music/composables/useSongs'
-import { usePlaybackStore } from '@/stores/playback'
-import { useSearch, usePagination, useSorting, useSelection } from '@/shared/composables/useUI'
-import { formatDuration } from '@/core/utils'
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
+import VirtualizedList from "@/shared/components/VirtualizedList.vue";
+import OptimizedImage from "@/shared/components/OptimizedImage.vue";
+import { useSongs } from "@/features/music/composables/useSongs";
+import { usePlaybackStore } from "@/stores/playback";
+import { useSearch, usePagination, useSorting, useSelection } from "@/shared/composables/useUI";
+import { formatDuration } from "@/core/utils";
 
 const props = defineProps({
   artistId: {
     type: String,
-    default: null
+    default: null,
   },
   playlistId: {
     type: String,
-    default: null
+    default: null,
   },
   genre: {
     type: String,
-    default: null
+    default: null,
   },
   showSelection: {
     type: Boolean,
-    default: false
-  }
-})
+    default: false,
+  },
+});
 
-const emit = defineEmits(['selection-change', 'song-play', 'context-menu'])
+const emit = defineEmits(["selection-change", "song-play", "context-menu"]);
 
 // Store
-const playbackStore = usePlaybackStore()
-const { currentSong } = storeToRefs(playbackStore)
+const playbackStore = usePlaybackStore();
+const { currentSong } = storeToRefs(playbackStore);
 
 // UI State
-const viewMode = ref('list')
-const sortDropdownOpen = ref(false)
-const trackItemHeight = 64
-const listHeight = 600
+const viewMode = ref("list");
+const sortDropdownOpen = ref(false);
+const trackItemHeight = 64;
+const listHeight = 600;
 
 // Search
-const { query: searchQuery, debouncedQuery, isSearching, clear: clearSearch } = useSearch()
+const { query: searchQuery, debouncedQuery, isSearching, clear: clearSearch } = useSearch();
 
 // Pagination
 const {
@@ -248,35 +246,26 @@ const {
   hasNext,
   setTotal,
   nextPage,
-  reset: resetPagination
-} = usePagination(1, 50)
+  reset: resetPagination,
+} = usePagination(1, 50);
 
 // Sorting
-const {
-  sortBy,
-  sortOrder,
-  setSorting
-} = useSorting('created_at', 'desc')
+const { sortBy, sortOrder, setSorting } = useSorting("created_at", "desc");
 
 // Selection (if enabled)
-const {
-  selected,
-  selectedCount,
-  hasSelection,
-  isSelected,
-  toggle,
-  deselectAll
-} = useSelection(props.showSelection)
+const { selected, selectedCount, hasSelection, isSelected, toggle, deselectAll } = useSelection(
+  props.showSelection,
+);
 
 // Sort options
 const sortOptions = [
-  { value: 'title', order: 'asc', label: 'Title A-Z' },
-  { value: 'title', order: 'desc', label: 'Title Z-A' },
-  { value: 'created_at', order: 'desc', label: 'Newest First' },
-  { value: 'created_at', order: 'asc', label: 'Oldest First' },
-  { value: 'duration', order: 'desc', label: 'Longest First' },
-  { value: 'duration', order: 'asc', label: 'Shortest First' }
-]
+  { value: "title", order: "asc", label: "Title A-Z" },
+  { value: "title", order: "desc", label: "Title Z-A" },
+  { value: "created_at", order: "desc", label: "Newest First" },
+  { value: "created_at", order: "asc", label: "Oldest First" },
+  { value: "duration", order: "desc", label: "Longest First" },
+  { value: "duration", order: "asc", label: "Shortest First" },
+];
 
 // Build query options
 const queryOptions = computed(() => ({
@@ -287,88 +276,94 @@ const queryOptions = computed(() => ({
   order: sortOrder.value,
   filters: {
     ...(props.artistId && { artist_id: props.artistId }),
-    ...(props.genre && { genre: props.genre })
-  }
-}))
+    ...(props.genre && { genre: props.genre }),
+  },
+}));
 
 // Vue Query for songs
-const {
-  data: songsData,
-  isLoading,
-  isError,
-  error
-} = useSongs(queryOptions)
+const { data: songsData, isLoading } = useSongs(queryOptions);
 
 // Extract songs and pagination info
-const songs = computed(() => songsData.value?.songs || [])
-const isLoadingMore = computed(() => isLoading.value && currentPage.value > 1)
+const songs = computed(() => songsData.value?.songs || []);
+const isLoadingMore = computed(() => isLoading.value && currentPage.value > 1);
 
 // Watch for data changes to update pagination
-watch(songsData, (newData) => {
-  if (newData) {
-    setTotal(newData.total)
-  }
-}, { immediate: true })
+watch(
+  songsData,
+  (newData) => {
+    if (newData) {
+      setTotal(newData.total);
+    }
+  },
+  { immediate: true },
+);
 
 // Watch for search changes to reset pagination
 watch(debouncedQuery, () => {
-  resetPagination()
-})
+  resetPagination();
+});
 
 // Watch for filter changes to reset pagination
-watch(() => [props.artistId, props.genre], () => {
-  resetPagination()
-})
+watch(
+  () => [props.artistId, props.genre],
+  () => {
+    resetPagination();
+  },
+);
 
 // Watch selection changes
-watch(selected, (newSelection) => {
-  emit('selection-change', newSelection)
-}, { deep: true })
+watch(
+  selected,
+  (newSelection) => {
+    emit("selection-change", newSelection);
+  },
+  { deep: true },
+);
 
 // Methods
 const getSortLabel = () => {
-  const option = sortOptions.find(opt => 
-    opt.value === sortBy.value && opt.order === sortOrder.value
-  )
-  return option?.label || 'Default'
-}
+  const option = sortOptions.find(
+    (opt) => opt.value === sortBy.value && opt.order === sortOrder.value,
+  );
+  return option?.label || "Default";
+};
 
 const handleSortChange = (field, order) => {
-  setSorting(field, order)
-  sortDropdownOpen.value = false
-  resetPagination()
-}
+  setSorting(field, order);
+  sortDropdownOpen.value = false;
+  resetPagination();
+};
 
 const loadMore = () => {
   if (hasNext.value && !isLoadingMore.value) {
-    nextPage()
+    nextPage();
   }
-}
+};
 
 const handlePlay = (song) => {
-  playbackStore.playSong(song)
-  emit('song-play', song)
-}
+  playbackStore.playSong(song);
+  emit("song-play", song);
+};
 
 const handleContextMenu = (song, event) => {
-  event.preventDefault()
-  emit('context-menu', { song, event })
-}
+  event.preventDefault();
+  emit("context-menu", { song, event });
+};
 
 // Click outside to close dropdowns
 const handleClickOutside = (event) => {
-  if (!event.target.closest('.sort-dropdown')) {
-    sortDropdownOpen.value = false
+  if (!event.target.closest(".sort-dropdown")) {
+    sortDropdownOpen.value = false;
   }
-}
+};
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
+  document.addEventListener("click", handleClickOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>

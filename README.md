@@ -1,4 +1,4 @@
-# Music Hub Platform
+h# Music Hub Platform
 
 A modern web-based collaborative music workspace for artists, managers, and creative teams — built with Vue 3, Supabase, and Pinia.
 
@@ -12,26 +12,26 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 
 ## 🛠 Tech Stack
 
-| Layer       | Tech                                        |
-|------------|---------------------------------------------|
-| Frontend    | Vue 3 (Composition API), Pinia, Vue Router |
-| Backend     | Supabase (PostgreSQL, Auth, Storage, RLS)  |
-| Styling     | Tailwind CSS, dark mode glassmorphism      |
-| Hosting     | Render (static site deployment)            |
-| Auth        | Supabase magic link + role-based guards    |
-| Realtime    | Supabase Channels (WebSocket-based)        |
+| Layer    | Tech                                       |
+| -------- | ------------------------------------------ |
+| Frontend | Vue 3 (Composition API), Pinia, Vue Router |
+| Backend  | Supabase (PostgreSQL, Auth, Storage, RLS)  |
+| Styling  | Tailwind CSS, dark mode glassmorphism      |
+| Hosting  | Render (static site deployment)            |
+| Auth     | Supabase magic link + role-based guards    |
+| Realtime | Supabase Channels (WebSocket-based)        |
 
 ---
 
 ## 🔐 Roles & Permissions
 
-| Role      | Permissions                                                         |
-|-----------|---------------------------------------------------------------------|
-| Owner     | Full access to everything                                           |
-| Editor    | CRUD access to artist assets, team management                      |
-| Artist    | Upload content, manage their own workspace                         |
-| Viewer    | Read-only access                                                    |
-| Invoicer  | Shared pattern with accounting tool (optional integration)         |
+| Role     | Permissions                                                |
+| -------- | ---------------------------------------------------------- |
+| Owner    | Full access to everything                                  |
+| Editor   | CRUD access to artist assets, team management              |
+| Artist   | Upload content, manage their own workspace                 |
+| Viewer   | Read-only access                                           |
+| Invoicer | Shared pattern with accounting tool (optional integration) |
 
 ---
 
@@ -46,15 +46,15 @@ This project inherits proven architecture patterns from the [All My Friends Invo
 
 ### 🧩 Tabs
 
-| Tab         | Functionality                                                    |
-|-------------|------------------------------------------------------------------|
-| Overview    | Stats, recent activity, quick actions                            |
-| Calendar    | Full event scheduling, invite flow, recurring support            |
-| Media       | Audio/image/video library with drag-and-drop upload              |
-| Moodboards  | Visual canvas for aesthetic collaboration (Fabric.js-based)      |
-| Timeline    | Career timeline / release log                                    |
-| Notes       | Kanban board for tasks, ideas, notes                             |
-| Team        | Invite users, assign roles, manage access                        |
+| Tab        | Functionality                                               |
+| ---------- | ----------------------------------------------------------- |
+| Overview   | Stats, recent activity, quick actions                       |
+| Calendar   | Full event scheduling, invite flow, recurring support       |
+| Media      | Audio/image/video library with drag-and-drop upload         |
+| Moodboards | Visual canvas for aesthetic collaboration (Fabric.js-based) |
+| Timeline   | Career timeline / release log                               |
+| Notes      | Kanban board for tasks, ideas, notes                        |
+| Team       | Invite users, assign roles, manage access                   |
 
 ---
 
@@ -105,7 +105,7 @@ The database schema is located in `/database/migrations/`. Run these in your Sup
 Create these storage buckets in the Supabase Dashboard:
 
 - **media** (Private) - For audio, video, documents
-- **avatars** (Public) - For user profile pictures  
+- **avatars** (Public) - For user profile pictures
 - **covers** (Public) - For album/playlist covers
 
 Then run the storage policies from the database README.
@@ -137,7 +137,7 @@ See `/database/README.md` for detailed schema documentation.
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm 7+
 - Supabase account and project
 
@@ -177,11 +177,11 @@ npm run lint         # Run linters
 
 ### Production Deployment via Render
 
-| Stage     | Domain                                 |
-|-----------|----------------------------------------|
-| Dev       | `localhost:5173`                       |
-| Staging   | `music-staging.allmyfriendsinc.com`    |
-| Production| `creative.allmyfriendsinc.com`         |
+| Stage      | Domain                              |
+| ---------- | ----------------------------------- |
+| Dev        | `localhost:5173`                    |
+| Staging    | `music-staging.allmyfriendsinc.com` |
+| Production | `creative.allmyfriendsinc.com`      |
 
 #### Render Configuration
 
@@ -223,17 +223,17 @@ The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` t
 
 ### Key Stores
 
-| Store | Purpose |
-|-------|---------|
+| Store          | Purpose                                    |
+| -------------- | ------------------------------------------ |
 | `enhancedAuth` | User authentication and profile management |
-| `calendar` | Event scheduling and calendar management |
-| `library` | Media file management and uploads |
-| `playlists` | Music playlist creation and management |
-| `notes` | Kanban-style task and note management |
-| `moodboards` | Visual collaboration and mood boarding |
-| `timeline` | Career timeline and milestone tracking |
-| `team` | Team member and permission management |
-| `activity` | Activity feed and audit logging |
+| `calendar`     | Event scheduling and calendar management   |
+| `library`      | Media file management and uploads          |
+| `playlists`    | Music playlist creation and management     |
+| `notes`        | Kanban-style task and note management      |
+| `moodboards`   | Visual collaboration and mood boarding     |
+| `timeline`     | Career timeline and milestone tracking     |
+| `team`         | Team member and permission management      |
+| `activity`     | Activity feed and audit logging            |
 
 ### API Layer
 
@@ -247,7 +247,7 @@ The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` t
 ## 🧠 Key Decisions
 
 - **Calendar Library:** FullCalendar.js
-- **Moodboard Canvas:** Fabric.js  
+- **Moodboard Canvas:** Fabric.js
 - **Audio Playback:** TBD (likely Howler.js)
 - **Database:** PostgreSQL via Supabase
 - **Authentication:** Supabase Auth with magic links
@@ -282,7 +282,7 @@ The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` t
 
 - Desktop dependencies (Tauri, SQLite) removed
 - Data transformed for PostgreSQL
-- File access migrated to Supabase Storage  
+- File access migrated to Supabase Storage
 - Real-time via Supabase channels (not IPC)
 - Authentication moved to Supabase Auth
 
@@ -312,6 +312,7 @@ The `npm start` script runs `vite preview --host 0.0.0.0 --port ${PORT:-4173}` t
 This is a private internal platform for All My Friends Inc. and associated artists.
 
 For access requests or collaboration inquiries, contact:
+
 - **Theo Battaglia** - [theo@allmyfriendsinc.com](mailto:theo@allmyfriendsinc.com)
 - **Website:** [allmyfriendsinc.com](https://allmyfriendsinc.com)
 

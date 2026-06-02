@@ -2,10 +2,10 @@
  * Song-related Vue Query composables
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { computed } from 'vue'
-import { songService } from '../services/songService'
-import { queryKeys, invalidateQueries, optimisticUpdates } from '@/shared/services/queryClient'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
+import { computed } from "vue";
+import { songService } from "../services/songService";
+import { queryKeys, invalidateQueries, optimisticUpdates } from "@/shared/services/queryClient";
 
 // Get all songs with pagination and filtering
 export function useSongs(options = {}) {
@@ -15,9 +15,9 @@ export function useSongs(options = {}) {
     staleTime: 3 * 60 * 1000, // 3 minutes
     select: (data) => ({
       ...data,
-      songs: data.data || []
-    })
-  })
+      songs: data.data || [],
+    }),
+  });
 }
 
 // Get single song by ID
@@ -26,8 +26,8 @@ export function useSong(songId) {
     queryKey: queryKeys.songs.detail(songId),
     queryFn: () => songService.getSong(songId),
     enabled: computed(() => !!songId),
-    staleTime: 10 * 60 * 1000 // 10 minutes
-  })
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 }
 
 // Get recent songs
@@ -35,193 +35,181 @@ export function useRecentSongs(limit = 50) {
   return useQuery({
     queryKey: queryKeys.songs.recent(),
     queryFn: () => songService.getRecentSongs(limit),
-    staleTime: 2 * 60 * 1000 // 2 minutes
-  })
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 }
 
 // Search songs
 export function useSearchSongs(query, options = {}) {
   return useQuery({
-    queryKey: [...queryKeys.songs.lists(), 'search', query, options],
+    queryKey: [...queryKeys.songs.lists(), "search", query, options],
     queryFn: () => songService.searchSongs(query, options),
     enabled: computed(() => !!query && query.length >= 2),
-    staleTime: 1 * 60 * 1000 // 1 minute
-  })
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
 }
 
 // Get songs by genre
 export function useSongsByGenre(genre, options = {}) {
   return useQuery({
-    queryKey: [...queryKeys.songs.lists(), 'genre', genre, options],
+    queryKey: [...queryKeys.songs.lists(), "genre", genre, options],
     queryFn: () => songService.getSongsByGenre(genre, options),
     enabled: computed(() => !!genre),
-    staleTime: 5 * 60 * 1000
-  })
+    staleTime: 5 * 60 * 1000,
+  });
 }
 
 // Get songs by artist
 export function useSongsByArtist(artistId, options = {}) {
   return useQuery({
-    queryKey: [...queryKeys.songs.lists(), 'artist', artistId, options],
+    queryKey: [...queryKeys.songs.lists(), "artist", artistId, options],
     queryFn: () => songService.getSongsByArtist(artistId, options),
     enabled: computed(() => !!artistId),
-    staleTime: 5 * 60 * 1000
-  })
+    staleTime: 5 * 60 * 1000,
+  });
 }
 
 // Create song mutation
 export function useCreateSong() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ songData, coverFile, audioFile }) => 
+    mutationFn: ({ songData, coverFile, audioFile }) =>
       songService.createSong(songData, coverFile, audioFile),
     onSuccess: (newSong) => {
       // Invalidate and refetch songs list
-      invalidateQueries.songs()
-      
+      invalidateQueries.songs();
+
       // Add to cache
-      queryClient.setQueryData(
-        queryKeys.songs.detail(newSong.id),
-        newSong
-      )
+      queryClient.setQueryData(queryKeys.songs.detail(newSong.id), newSong);
 
       // Invalidate artist songs if applicable
       if (newSong.artist_id) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.artists.songs(newSong.artist_id)
-        })
+          queryKey: queryKeys.artists.songs(newSong.artist_id),
+        });
       }
     },
     onError: (error) => {
-      console.error('Failed to create song:', error)
-    }
-  })
+      console.error("Failed to create song:", error);
+    },
+  });
 }
 
 // Update song mutation
 export function useUpdateSong() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, songData, coverFile, audioFile }) => 
+    mutationFn: ({ id, songData, coverFile, audioFile }) =>
       songService.updateSong(id, songData, coverFile, audioFile),
     onMutate: async ({ id, songData }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.songs.detail(id) })
+      await queryClient.cancelQueries({ queryKey: queryKeys.songs.detail(id) });
 
       // Snapshot previous value
-      const previousSong = queryClient.getQueryData(queryKeys.songs.detail(id))
+      const previousSong = queryClient.getQueryData(queryKeys.songs.detail(id));
 
       // Optimistically update
-      optimisticUpdates.updateSong(id, (old) => ({ ...old, ...songData }))
+      optimisticUpdates.updateSong(id, (old) => ({ ...old, ...songData }));
 
-      return { previousSong, id }
+      return { previousSong, id };
     },
     onError: (err, variables, context) => {
       // Rollback on error
       if (context?.previousSong) {
-        queryClient.setQueryData(
-          queryKeys.songs.detail(context.id),
-          context.previousSong
-        )
+        queryClient.setQueryData(queryKeys.songs.detail(context.id), context.previousSong);
       }
     },
     onSuccess: (updatedSong, { id }) => {
       // Update cache with server response
-      queryClient.setQueryData(
-        queryKeys.songs.detail(id),
-        updatedSong
-      )
-      invalidateQueries.songs()
+      queryClient.setQueryData(queryKeys.songs.detail(id), updatedSong);
+      invalidateQueries.songs();
 
       // Invalidate artist songs if applicable
       if (updatedSong.artist_id) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.artists.songs(updatedSong.artist_id)
-        })
+          queryKey: queryKeys.artists.songs(updatedSong.artist_id),
+        });
       }
-    }
-  })
+    },
+  });
 }
 
 // Delete song mutation
 export function useDeleteSong() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (songId) => songService.deleteSong(songId),
     onMutate: async (songId) => {
       // Get song data before deletion to know which artist to invalidate
-      const songData = queryClient.getQueryData(queryKeys.songs.detail(songId))
-      return { songData }
+      const songData = queryClient.getQueryData(queryKeys.songs.detail(songId));
+      return { songData };
     },
     onSuccess: (_, songId, context) => {
       // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.songs.detail(songId) })
-      
+      queryClient.removeQueries({ queryKey: queryKeys.songs.detail(songId) });
+
       // Invalidate lists
-      invalidateQueries.songs()
+      invalidateQueries.songs();
 
       // Invalidate artist songs if applicable
       if (context?.songData?.artist_id) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.artists.songs(context.songData.artist_id)
-        })
+          queryKey: queryKeys.artists.songs(context.songData.artist_id),
+        });
       }
     },
     onError: (error) => {
-      console.error('Failed to delete song:', error)
-    }
-  })
+      console.error("Failed to delete song:", error);
+    },
+  });
 }
 
 // Bulk operations
 export function useBulkSongOperations() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const bulkDelete = useMutation({
-    mutationFn: (songIds) => Promise.all(
-      songIds.map(id => songService.deleteSong(id))
-    ),
+    mutationFn: (songIds) => Promise.all(songIds.map((id) => songService.deleteSong(id))),
     onSuccess: (_, songIds) => {
       // Remove from cache
-      songIds.forEach(id => {
-        queryClient.removeQueries({ queryKey: queryKeys.songs.detail(id) })
-      })
-      
+      songIds.forEach((id) => {
+        queryClient.removeQueries({ queryKey: queryKeys.songs.detail(id) });
+      });
+
       // Invalidate lists
-      invalidateQueries.songs()
-      invalidateQueries.artists()
-    }
-  })
+      invalidateQueries.songs();
+      invalidateQueries.artists();
+    },
+  });
 
   const bulkUpdateGenre = useMutation({
-    mutationFn: ({ songIds, genre }) => Promise.all(
-      songIds.map(id => songService.updateSong(id, { genre }))
-    ),
+    mutationFn: ({ songIds, genre }) =>
+      Promise.all(songIds.map((id) => songService.updateSong(id, { genre }))),
     onSuccess: () => {
-      invalidateQueries.songs()
-    }
-  })
+      invalidateQueries.songs();
+    },
+  });
 
   return {
     bulkDelete,
-    bulkUpdateGenre
-  }
+    bulkUpdateGenre,
+  };
 }
 
 // Prefetch songs
 export function usePrefetchSong() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return {
     prefetchSong: (songId) => {
       queryClient.prefetchQuery({
         queryKey: queryKeys.songs.detail(songId),
         queryFn: () => songService.getSong(songId),
-        staleTime: 10 * 60 * 1000
-      })
-    }
-  }
+        staleTime: 10 * 60 * 1000,
+      });
+    },
+  };
 }

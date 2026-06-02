@@ -27,10 +27,7 @@
             v-for="filter in quickFilters"
             :key="filter.key"
             @click="setQuickFilter(filter.key)"
-            :class="[
-              'filter-chip',
-              { active: activeFilter === filter.key }
-            ]"
+            :class="['filter-chip', { active: activeFilter === filter.key }]"
           >
             <svg v-if="filter.icon" viewBox="0 0 24 24" fill="currentColor">
               <path :d="filter.icon" />
@@ -45,22 +42,22 @@
         <div v-if="hasSelection" class="selection-actions">
           <div class="selection-info">
             <span>{{ selectedCount }} selected</span>
-            <button @click="deselectAll" class="clear-selection">
-              Clear
-            </button>
+            <button @click="deselectAll" class="clear-selection">Clear</button>
           </div>
-          
+
           <div class="action-buttons">
             <button @click="playSelected" class="action-btn primary">
               <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
+                <path d="M8 5v14l11-7z" />
               </svg>
               Play Selected
             </button>
-            
+
             <button @click="deleteSelected" class="action-btn danger">
               <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                <path
+                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                />
               </svg>
               Delete
             </button>
@@ -70,14 +67,16 @@
         <div v-else class="main-actions">
           <button @click="playAll" class="action-btn primary">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
+              <path d="M8 5v14l11-7z" />
             </svg>
             Play All
           </button>
-          
+
           <button @click="shuffleAll" class="action-btn secondary">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+              <path
+                d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"
+              />
             </svg>
             Shuffle All
           </button>
@@ -108,17 +107,16 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        :class="[
-          'toast-message',
-          `toast-${toast.type}`
-        ]"
+        :class="['toast-message', `toast-${toast.type}`]"
       >
         <div class="toast-content">
           <strong>{{ toast.message }}</strong>
         </div>
         <button @click="removeToast(toast.id)" class="toast-close">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
           </svg>
         </button>
       </div>
@@ -127,28 +125,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { storeToRefs } from 'pinia'
-import TrackList from '@/features/music/components/TrackList.vue'
-import { useSongs, useBulkSongOperations } from '@/features/music/composables/useSongs'
-import { usePlaybackStore } from '@/stores/playback'
-import { useSelection, useToast } from '@/shared/composables/useUI'
-import { formatDuration, shuffleArray } from '@/core/utils'
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import TrackList from "@/features/music/components/TrackList.vue";
+import { useSongs, useBulkSongOperations } from "@/features/music/composables/useSongs";
+import { usePlaybackStore } from "@/stores/playback";
+import { useSelection, useToast } from "@/shared/composables/useUI";
+import { formatDuration, shuffleArray } from "@/core/utils";
 
 // Stores
-const playbackStore = usePlaybackStore()
-const { currentSong } = storeToRefs(playbackStore)
+const playbackStore = usePlaybackStore();
 
 // UI State
-const activeFilter = ref('all')
+const activeFilter = ref("all");
 
 // Bulk operations
-const { bulkDelete } = useBulkSongOperations()
-const isBulkLoading = computed(() => bulkDelete.isPending.value)
+const { bulkDelete } = useBulkSongOperations();
+const isBulkLoading = computed(() => bulkDelete.isPending.value);
 const bulkLoadingMessage = computed(() => {
-  if (bulkDelete.isPending.value) return 'Deleting songs...'
-  return 'Processing...'
-})
+  if (bulkDelete.isPending.value) return "Deleting songs...";
+  return "Processing...";
+});
 
 // Selection management
 const {
@@ -156,146 +152,155 @@ const {
   selectedCount,
   hasSelection,
   selectAll,
-  deselectAll
-} = useSelection(true) // Enable multiple selection
+  deselectAll,
+} = useSelection(true); // Enable multiple selection
 
 // Toast notifications
-const { toasts, success, error, removeToast } = useToast()
+const { toasts, success, error, removeToast } = useToast();
 
 // Quick filters
 const quickFilters = [
-  { key: 'all', label: 'All Songs', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-  { key: 'recent', label: 'Recently Added', icon: 'M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z' },
-  { key: 'favorites', label: 'Favorites', icon: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' }
-]
+  {
+    key: "all",
+    label: "All Songs",
+    icon: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+  },
+  {
+    key: "recent",
+    label: "Recently Added",
+    icon: "M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z",
+  },
+  {
+    key: "favorites",
+    label: "Favorites",
+    icon: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
+  },
+];
 
 // Build query options based on active filter
 const queryOptions = computed(() => {
-  const baseOptions = {}
-  
+  const baseOptions = {};
+
   switch (activeFilter.value) {
-    case 'recent':
-      return { ...baseOptions, sort: 'created_at', order: 'desc' }
-    case 'favorites':
-      return { ...baseOptions, filters: { is_favorite: true } }
+    case "recent":
+      return { ...baseOptions, sort: "created_at", order: "desc" };
+    case "favorites":
+      return { ...baseOptions, filters: { is_favorite: true } };
     default:
-      return baseOptions
+      return baseOptions;
   }
-})
+});
 
 // Get songs using Vue Query
-const {
-  data: songsData,
-  isLoading,
-  isError,
-  error: songsError
-} = useSongs(queryOptions)
+const { data: songsData, error: songsError } = useSongs(queryOptions);
 
 // Computed properties
-const songs = computed(() => songsData.value?.songs || [])
-const totalSongs = computed(() => songsData.value?.total || 0)
-const totalDuration = computed(() => 
-  songs.value.reduce((total, song) => total + (song.duration || 0), 0)
-)
+const songs = computed(() => songsData.value?.songs || []);
+const totalSongs = computed(() => songsData.value?.total || 0);
+const totalDuration = computed(() =>
+  songs.value.reduce((total, song) => total + (song.duration || 0), 0),
+);
 
 // Methods
 const setQuickFilter = (filterKey) => {
-  activeFilter.value = filterKey
-  deselectAll() // Clear selection when changing filters
-}
+  activeFilter.value = filterKey;
+  deselectAll(); // Clear selection when changing filters
+};
 
-const handleSelectionChange = (newSelection) => {
+const handleSelectionChange = () => {
   // Selection is managed by the composable
-}
+};
 
 const handleSongPlay = (song) => {
-  success(`Now playing: ${song.title}`)
-}
+  success(`Now playing: ${song.title}`);
+};
 
-const handleContextMenu = ({ song, event }) => {
+const handleContextMenu = ({ song }) => {
   // Context menu handling would go here
-  console.log('Context menu for song:', song)
-}
+  console.log("Context menu for song:", song);
+};
 
 const playAll = () => {
   if (songs.value.length > 0) {
-    playbackStore.playQueue(songs.value)
-    success(`Playing ${songs.value.length} songs`)
+    playbackStore.playQueue(songs.value);
+    success(`Playing ${songs.value.length} songs`);
   }
-}
+};
 
 const shuffleAll = () => {
   if (songs.value.length > 0) {
-    const shuffled = shuffleArray(songs.value)
-    playbackStore.playQueue(shuffled)
-    success(`Shuffling ${songs.value.length} songs`)
+    const shuffled = shuffleArray(songs.value);
+    playbackStore.playQueue(shuffled);
+    success(`Shuffling ${songs.value.length} songs`);
   }
-}
+};
 
 const playSelected = () => {
   if (selectedSongs.value.length > 0) {
-    playbackStore.playQueue(selectedSongs.value)
-    success(`Playing ${selectedSongs.value.length} selected songs`)
-    deselectAll()
+    playbackStore.playQueue(selectedSongs.value);
+    success(`Playing ${selectedSongs.value.length} selected songs`);
+    deselectAll();
   }
-}
+};
 
 const deleteSelected = async () => {
-  if (selectedSongs.value.length === 0) return
-  
-  const count = selectedSongs.value.length
-  const confirmed = confirm(`Are you sure you want to delete ${count} songs? This action cannot be undone.`)
-  
+  if (selectedSongs.value.length === 0) return;
+
+  const count = selectedSongs.value.length;
+  const confirmed = confirm(
+    `Are you sure you want to delete ${count} songs? This action cannot be undone.`,
+  );
+
   if (confirmed) {
     try {
-      const songIds = selectedSongs.value.map(song => song.id)
-      await bulkDelete.mutateAsync(songIds)
-      success(`Successfully deleted ${count} songs`)
-      deselectAll()
+      const songIds = selectedSongs.value.map((song) => song.id);
+      await bulkDelete.mutateAsync(songIds);
+      success(`Successfully deleted ${count} songs`);
+      deselectAll();
     } catch (err) {
-      error(`Failed to delete songs: ${err.message}`)
+      error(`Failed to delete songs: ${err.message}`);
     }
   }
-}
+};
 
 // Keyboard shortcuts
 const handleKeydown = (event) => {
-  if (event.target.tagName === 'INPUT') return // Don't interfere with input fields
-  
+  if (event.target.tagName === "INPUT") return; // Don't interfere with input fields
+
   switch (event.key) {
-    case 'Escape':
+    case "Escape":
       if (hasSelection.value) {
-        deselectAll()
+        deselectAll();
       }
-      break
-    case ' ':
-      event.preventDefault()
-      playbackStore.togglePlayback()
-      break
-    case 'a':
+      break;
+    case " ":
+      event.preventDefault();
+      playbackStore.togglePlayback();
+      break;
+    case "a":
       if (event.ctrlKey || event.metaKey) {
-        event.preventDefault()
-        selectAll(songs.value)
+        event.preventDefault();
+        selectAll(songs.value);
       }
-      break
+      break;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-})
+  document.addEventListener("keydown", handleKeydown);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown)
-})
+  document.removeEventListener("keydown", handleKeydown);
+});
 
 // Watch for errors
-watch(songsError, (error) => {
-  if (error) {
-    error(`Failed to load songs: ${error.message}`)
+watch(songsError, (queryError) => {
+  if (queryError) {
+    error(`Failed to load songs: ${queryError.message}`);
   }
-})
+});
 </script>
 
 <style scoped>
@@ -606,37 +611,37 @@ watch(songsError, (error) => {
   .view-header {
     padding: 1rem;
   }
-  
+
   .header-content {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .stats-row {
     gap: 1rem;
   }
-  
+
   .quick-filters {
     justify-content: flex-start;
   }
-  
+
   .action-bar {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .selection-actions,
   .main-actions {
     justify-content: center;
   }
-  
+
   .action-buttons {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .songs-track-list {
     padding: 0 1rem 1rem;
   }

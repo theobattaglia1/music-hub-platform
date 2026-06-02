@@ -947,7 +947,7 @@ const handleSearchShortcut = (e) => {
 
 // Apply persisted density on mount
 const applyDensity = () => {
-  const density = localStorage.getItem("mhDensity");
+  const density = localStorage.getItem("mhDensity") || "compact";
   if (density === "compact") {
     document.documentElement.classList.add("compact");
   } else {

@@ -1,46 +1,33 @@
 <template>
-  <div 
-    ref="containerRef"
-    class="virtualized-list"
-    :style="containerStyle"
-    @scroll="handleScroll"
-  >
+  <div ref="containerRef" class="virtualized-list" :style="containerStyle" @scroll="handleScroll">
     <!-- Virtual spacer before visible items -->
-    <div 
-      v-if="offsetY > 0" 
+    <div
+      v-if="offsetY > 0"
       :style="{ height: `${offsetY}px` }"
       class="virtualized-list__spacer"
     ></div>
 
     <!-- Visible items -->
     <div
-      v-for="(item, index) in visibleItems"
+      v-for="item in visibleItems"
       :key="keyExtractor(item.data, item.index)"
       :style="getItemStyle(item.index)"
       class="virtualized-list__item"
     >
-      <slot 
-        name="item"
-        :item="item.data"
-        :index="item.index"
-        :isVisible="true"
-      >
+      <slot name="item" :item="item.data" :index="item.index" :isVisible="true">
         {{ item.data }}
       </slot>
     </div>
 
     <!-- Virtual spacer after visible items -->
-    <div 
-      v-if="offsetYEnd > 0" 
+    <div
+      v-if="offsetYEnd > 0"
       :style="{ height: `${offsetYEnd}px` }"
       class="virtualized-list__spacer"
     ></div>
 
     <!-- Loading indicator -->
-    <div 
-      v-if="isLoading && visibleItems.length === 0"
-      class="virtualized-list__loading"
-    >
+    <div v-if="isLoading && visibleItems.length === 0" class="virtualized-list__loading">
       <slot name="loading">
         <div class="virtualized-list__spinner"></div>
         <span>Loading...</span>
@@ -48,249 +35,243 @@
     </div>
 
     <!-- Empty state -->
-    <div 
-      v-if="!isLoading && items.length === 0"
-      class="virtualized-list__empty"
-    >
+    <div v-if="!isLoading && items.length === 0" class="virtualized-list__empty">
       <slot name="empty">
         <p>No items to display</p>
       </slot>
     </div>
 
     <!-- Load more trigger -->
-    <div 
-      v-if="hasMore && !isLoading"
-      ref="loadMoreRef"
-      class="virtualized-list__load-more"
-    >
+    <div v-if="hasMore && !isLoading" ref="loadMoreRef" class="virtualized-list__load-more">
       <slot name="load-more" :load-more="loadMore">
-        <button @click="loadMore" class="virtualized-list__load-more-btn">
-          Load More
-        </button>
+        <button @click="loadMore" class="virtualized-list__load-more-btn">Load More</button>
       </slot>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { throttle } from '@/core/utils'
-import { UI_CONFIG } from '@/core/constants'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { throttle } from "@/core/utils";
+import { UI_CONFIG } from "@/core/constants";
 
 const props = defineProps({
   items: {
     type: Array,
-    required: true
+    required: true,
   },
   itemHeight: {
     type: Number,
-    default: UI_CONFIG.VIRTUALIZED_ITEM_HEIGHT
+    default: UI_CONFIG.VIRTUALIZED_ITEM_HEIGHT,
   },
   containerHeight: {
     type: Number,
-    default: 400
+    default: 400,
   },
   keyExtractor: {
     type: Function,
-    default: (item, index) => index
+    default: (item, index) => index,
   },
   overscan: {
     type: Number,
-    default: 5
+    default: 5,
   },
   isLoading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   hasMore: {
     type: Boolean,
-    default: false
+    default: false,
   },
   threshold: {
     type: Number,
-    default: 200
-  }
-})
+    default: 200,
+  },
+});
 
-const emit = defineEmits(['load-more', 'scroll'])
+const emit = defineEmits(["load-more", "scroll"]);
 
 // Refs
-const containerRef = ref(null)
-const loadMoreRef = ref(null)
-const scrollTop = ref(0)
+const containerRef = ref(null);
+const loadMoreRef = ref(null);
+const scrollTop = ref(0);
 
 // Intersection Observer for load more
-let loadMoreObserver = null
+let loadMoreObserver = null;
 
 // Computed properties
 const containerStyle = computed(() => ({
   height: `${props.containerHeight}px`,
-  overflowY: 'auto',
-  position: 'relative'
-}))
+  overflowY: "auto",
+  position: "relative",
+}));
 
 const totalHeight = computed(() => {
-  return props.items.length * props.itemHeight
-})
+  return props.items.length * props.itemHeight;
+});
 
 const visibleStartIndex = computed(() => {
-  return Math.max(0, Math.floor(scrollTop.value / props.itemHeight) - props.overscan)
-})
+  return Math.max(0, Math.floor(scrollTop.value / props.itemHeight) - props.overscan);
+});
 
 const visibleEndIndex = computed(() => {
-  const containerHeight = props.containerHeight
+  const containerHeight = props.containerHeight;
   const endIndex = Math.min(
     props.items.length - 1,
-    Math.floor((scrollTop.value + containerHeight) / props.itemHeight) + props.overscan
-  )
-  return Math.max(visibleStartIndex.value, endIndex)
-})
+    Math.floor((scrollTop.value + containerHeight) / props.itemHeight) + props.overscan,
+  );
+  return Math.max(visibleStartIndex.value, endIndex);
+});
 
 const visibleItems = computed(() => {
-  const start = visibleStartIndex.value
-  const end = visibleEndIndex.value
-  
-  const items = []
+  const start = visibleStartIndex.value;
+  const end = visibleEndIndex.value;
+
+  const items = [];
   for (let i = start; i <= end; i++) {
     if (props.items[i]) {
       items.push({
         data: props.items[i],
-        index: i
-      })
+        index: i,
+      });
     }
   }
-  
-  return items
-})
+
+  return items;
+});
 
 const offsetY = computed(() => {
-  return visibleStartIndex.value * props.itemHeight
-})
+  return visibleStartIndex.value * props.itemHeight;
+});
 
 const offsetYEnd = computed(() => {
-  const remainingItems = props.items.length - visibleEndIndex.value - 1
-  return Math.max(0, remainingItems * props.itemHeight)
-})
+  const remainingItems = props.items.length - visibleEndIndex.value - 1;
+  return Math.max(0, remainingItems * props.itemHeight);
+});
 
 // Methods
-const getItemStyle = (index) => ({
+const getItemStyle = () => ({
   height: `${props.itemHeight}px`,
-  position: 'relative'
-})
+  position: "relative",
+});
 
 const handleScroll = throttle((event) => {
-  scrollTop.value = event.target.scrollTop
-  emit('scroll', {
+  scrollTop.value = event.target.scrollTop;
+  emit("scroll", {
     scrollTop: scrollTop.value,
     scrollLeft: event.target.scrollLeft,
     containerHeight: props.containerHeight,
-    totalHeight: totalHeight.value
-  })
-}, 16) // ~60fps
+    totalHeight: totalHeight.value,
+  });
+}, 16); // ~60fps
 
 const loadMore = () => {
   if (!props.isLoading && props.hasMore) {
-    emit('load-more')
+    emit("load-more");
   }
-}
+};
 
-const scrollToIndex = (index, align = 'auto') => {
-  if (!containerRef.value) return
-  
-  const targetScrollTop = index * props.itemHeight
-  const containerHeight = props.containerHeight
-  const currentScrollTop = scrollTop.value
-  
-  let newScrollTop = targetScrollTop
-  
-  if (align === 'start') {
-    newScrollTop = targetScrollTop
-  } else if (align === 'end') {
-    newScrollTop = targetScrollTop - containerHeight + props.itemHeight
-  } else if (align === 'center') {
-    newScrollTop = targetScrollTop - containerHeight / 2 + props.itemHeight / 2
-  } else if (align === 'auto') {
+const scrollToIndex = (index, align = "auto") => {
+  if (!containerRef.value) return;
+
+  const targetScrollTop = index * props.itemHeight;
+  const containerHeight = props.containerHeight;
+  const currentScrollTop = scrollTop.value;
+
+  let newScrollTop = targetScrollTop;
+
+  if (align === "start") {
+    newScrollTop = targetScrollTop;
+  } else if (align === "end") {
+    newScrollTop = targetScrollTop - containerHeight + props.itemHeight;
+  } else if (align === "center") {
+    newScrollTop = targetScrollTop - containerHeight / 2 + props.itemHeight / 2;
+  } else if (align === "auto") {
     // Only scroll if item is not visible
     if (targetScrollTop < currentScrollTop) {
-      newScrollTop = targetScrollTop
+      newScrollTop = targetScrollTop;
     } else if (targetScrollTop + props.itemHeight > currentScrollTop + containerHeight) {
-      newScrollTop = targetScrollTop - containerHeight + props.itemHeight
+      newScrollTop = targetScrollTop - containerHeight + props.itemHeight;
     } else {
-      return // Item is already visible
+      return; // Item is already visible
     }
   }
-  
-  containerRef.value.scrollTop = Math.max(0, Math.min(newScrollTop, totalHeight.value - containerHeight))
-}
+
+  containerRef.value.scrollTop = Math.max(
+    0,
+    Math.min(newScrollTop, totalHeight.value - containerHeight),
+  );
+};
 
 const scrollToTop = () => {
   if (containerRef.value) {
-    containerRef.value.scrollTop = 0
+    containerRef.value.scrollTop = 0;
   }
-}
+};
 
 const scrollToBottom = () => {
   if (containerRef.value) {
-    containerRef.value.scrollTop = totalHeight.value
+    containerRef.value.scrollTop = totalHeight.value;
   }
-}
+};
 
 const setupLoadMoreObserver = () => {
-  if (!props.hasMore || !loadMoreRef.value) return
-  
+  if (!props.hasMore || !loadMoreRef.value) return;
+
   loadMoreObserver = new IntersectionObserver(
     (entries) => {
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting && !props.isLoading) {
-          loadMore()
+          loadMore();
         }
-      })
+      });
     },
     {
       root: containerRef.value,
       rootMargin: `${props.threshold}px`,
-      threshold: 0.1
-    }
-  )
-  
-  loadMoreObserver.observe(loadMoreRef.value)
-}
+      threshold: 0.1,
+    },
+  );
+
+  loadMoreObserver.observe(loadMoreRef.value);
+};
 
 // Watch for changes that require re-setup
 watch(
   () => props.hasMore,
   async (hasMore) => {
     if (hasMore) {
-      await nextTick()
-      setupLoadMoreObserver()
+      await nextTick();
+      setupLoadMoreObserver();
     } else {
-      loadMoreObserver?.disconnect()
+      loadMoreObserver?.disconnect();
     }
-  }
-)
+  },
+);
 
 watch(
   () => loadMoreRef.value,
   async (newRef) => {
     if (newRef && props.hasMore) {
-      await nextTick()
-      setupLoadMoreObserver()
+      await nextTick();
+      setupLoadMoreObserver();
     }
-  }
-)
+  },
+);
 
 // Lifecycle
 onMounted(async () => {
-  await nextTick()
-  
+  await nextTick();
+
   if (props.hasMore) {
-    setupLoadMoreObserver()
+    setupLoadMoreObserver();
   }
-})
+});
 
 onUnmounted(() => {
-  loadMoreObserver?.disconnect()
-})
+  loadMoreObserver?.disconnect();
+});
 
 // Expose methods to parent
 defineExpose({
@@ -299,9 +280,9 @@ defineExpose({
   scrollToBottom,
   getVisibleRange: () => ({
     start: visibleStartIndex.value,
-    end: visibleEndIndex.value
-  })
-})
+    end: visibleEndIndex.value,
+  }),
+});
 </script>
 
 <style scoped>

@@ -9,7 +9,7 @@
         </div>
         <button @click="$emit('close')" class="close-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 18L18 6M6 6l12 12"/>
+            <path d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -40,7 +40,9 @@
                 <div class="setting-item">
                   <label class="setting-label">Header Font Family</label>
                   <select v-model="preferences.headerFont.family" class="setting-input">
-                    <option value="'SF Pro Display', -apple-system, sans-serif">SF Pro Display</option>
+                    <option value="'SF Pro Display', -apple-system, sans-serif">
+                      SF Pro Display
+                    </option>
                     <option value="'Helvetica Neue', Arial, sans-serif">Helvetica Neue</option>
                     <option value="'Inter', sans-serif">Inter</option>
                     <option value="'Roboto', sans-serif">Roboto</option>
@@ -85,11 +87,7 @@
                 <div class="setting-item">
                   <label class="setting-label">Background Color</label>
                   <div class="color-input-group">
-                    <input
-                      v-model="preferences.bgColor"
-                      type="color"
-                      class="color-input"
-                    />
+                    <input v-model="preferences.bgColor" type="color" class="color-input" />
                     <input
                       v-model="preferences.bgColor"
                       type="text"
@@ -102,16 +100,12 @@
                 <div class="setting-item">
                   <label class="setting-label">Accent Color</label>
                   <div class="color-input-group">
-                    <input
-                      v-model="preferences.accentColor"
-                      type="color"
-                      class="color-input"
-                    />
+                    <input v-model="preferences.accentColor" type="color" class="color-input" />
                     <input
                       v-model="preferences.accentColor"
                       type="text"
                       class="setting-input"
-                      placeholder="#1db954"
+                      placeholder="#e85a19"
                     />
                   </div>
                 </div>
@@ -131,7 +125,9 @@
                     <span class="checkbox-custom"></span>
                     <span>Compact Mode</span>
                   </label>
-                  <p class="setting-description">Reduces spacing and padding throughout the interface</p>
+                  <p class="setting-description">
+                    Reduces spacing and padding throughout the interface
+                  </p>
                 </div>
 
                 <div class="setting-item checkbox-item">
@@ -171,11 +167,7 @@
 
                 <div class="setting-item checkbox-item">
                   <label class="checkbox-label">
-                    <input
-                      v-model="preferences.autoPlay"
-                      type="checkbox"
-                      class="checkbox-input"
-                    />
+                    <input v-model="preferences.autoPlay" type="checkbox" class="checkbox-input" />
                     <span class="checkbox-custom"></span>
                     <span>Auto-play next track</span>
                   </label>
@@ -183,11 +175,7 @@
 
                 <div class="setting-item checkbox-item">
                   <label class="checkbox-label">
-                    <input
-                      v-model="preferences.crossfade"
-                      type="checkbox"
-                      class="checkbox-input"
-                    />
+                    <input v-model="preferences.crossfade" type="checkbox" class="checkbox-input" />
                     <span class="checkbox-custom"></span>
                     <span>Crossfade between tracks</span>
                   </label>
@@ -239,7 +227,9 @@
                     <span class="checkbox-custom"></span>
                     <span>Allow notifications</span>
                   </label>
-                  <p class="setting-description">Receive notifications for collaborations and updates</p>
+                  <p class="setting-description">
+                    Receive notifications for collaborations and updates
+                  </p>
                 </div>
               </div>
             </div>
@@ -275,54 +265,72 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, h } from 'vue'
+import { ref, reactive, onMounted, h } from "vue";
 
 // Emits
-const emit = defineEmits(['close'])
+const emit = defineEmits(["close"]);
 
 // State
-const activeTab = ref('appearance')
+const activeTab = ref("appearance");
 
 const tabs = [
   {
-    id: 'appearance',
-    name: 'Appearance',
-    icon: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.19 0 .34-.16.34-.34 0-.09-.03-.17-.09-.25-.27-.44-.64-1.41-.64-2.41 0-1.66 1.34-3 3-3h3.5c3.03 0 5.5-2.47 5.5-5.5C22 5.81 17.19 2 12 2z' }))
+    id: "appearance",
+    name: "Appearance",
+    icon: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.19 0 .34-.16.34-.34 0-.09-.03-.17-.09-.25-.27-.44-.64-1.41-.64-2.41 0-1.66 1.34-3 3-3h3.5c3.03 0 5.5-2.47 5.5-5.5C22 5.81 17.19 2 12 2z",
+        }),
+      ),
   },
   {
-    id: 'audio',
-    name: 'Audio',
-    icon: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z' }))
+    id: "audio",
+    name: "Audio",
+    icon: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+        }),
+      ),
   },
   {
-    id: 'privacy',
-    name: 'Privacy',
-    icon: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' },
-      h('path', { d: 'M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z' }))
-  }
-]
+    id: "privacy",
+    name: "Privacy",
+    icon: () =>
+      h(
+        "svg",
+        { viewBox: "0 0 24 24", fill: "currentColor" },
+        h("path", {
+          d: "M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z",
+        }),
+      ),
+  },
+];
 
 // Preferences state
 const preferences = reactive({
   // Typography
   headerFont: {
     family: "'SF Pro Display', -apple-system, sans-serif",
-    size: '24px',
-    weight: '700',
-    lineHeight: '1.2'
+    size: "24px",
+    weight: "700",
+    lineHeight: "1.2",
   },
   bodyFont: {
     family: "'SF Pro Text', -apple-system, sans-serif",
-    size: '14px',
-    weight: '400',
-    lineHeight: '1.5'
+    size: "14px",
+    weight: "400",
+    lineHeight: "1.5",
   },
 
   // Colors
-  bgColor: '#000000',
-  accentColor: '#1db954',
+  bgColor: "#000000",
+  accentColor: "#e85a19",
 
   // Layout
   compactMode: false,
@@ -332,88 +340,88 @@ const preferences = reactive({
   defaultVolume: 80,
   autoPlay: true,
   crossfade: false,
-  audioQuality: 'high',
+  audioQuality: "high",
 
   // Privacy
   showActivity: true,
-  allowNotifications: true
-})
+  allowNotifications: true,
+});
 
 // Methods
 const savePreferences = () => {
   // Save to localStorage or API
-  localStorage.setItem('musicHubPreferences', JSON.stringify(preferences))
+  localStorage.setItem("musicHubPreferences", JSON.stringify(preferences));
 
   // Apply CSS variables
-  applyPreferences()
+  applyPreferences();
 
-  emit('close')
-}
+  emit("close");
+};
 
 const resetToDefaults = () => {
   // Reset all preferences to defaults
   Object.assign(preferences, {
     headerFont: {
       family: "'SF Pro Display', -apple-system, sans-serif",
-      size: '24px',
-      weight: '700',
-      lineHeight: '1.2'
+      size: "24px",
+      weight: "700",
+      lineHeight: "1.2",
     },
     bodyFont: {
       family: "'SF Pro Text', -apple-system, sans-serif",
-      size: '14px',
-      weight: '400',
-      lineHeight: '1.5'
+      size: "14px",
+      weight: "400",
+      lineHeight: "1.5",
     },
-    bgColor: '#000000',
-    accentColor: '#1db954',
+    bgColor: "#000000",
+    accentColor: "#e85a19",
     compactMode: false,
     hideImages: false,
     defaultVolume: 80,
     autoPlay: true,
     crossfade: false,
-    audioQuality: 'high',
+    audioQuality: "high",
     showActivity: true,
-    allowNotifications: true
-  })
-}
+    allowNotifications: true,
+  });
+};
 
 const applyPreferences = () => {
-  const root = document.documentElement
+  const root = document.documentElement;
 
   // Apply CSS variables
-  root.style.setProperty('--header-font-family', preferences.headerFont.family)
-  root.style.setProperty('--header-font-size', preferences.headerFont.size)
-  root.style.setProperty('--header-font-weight', preferences.headerFont.weight)
-  root.style.setProperty('--header-font-line-height', preferences.headerFont.lineHeight)
+  root.style.setProperty("--header-font-family", preferences.headerFont.family);
+  root.style.setProperty("--header-font-size", preferences.headerFont.size);
+  root.style.setProperty("--header-font-weight", preferences.headerFont.weight);
+  root.style.setProperty("--header-font-line-height", preferences.headerFont.lineHeight);
 
-  root.style.setProperty('--body-font-family', preferences.bodyFont.family)
-  root.style.setProperty('--body-font-size', preferences.bodyFont.size)
-  root.style.setProperty('--body-font-weight', preferences.bodyFont.weight)
-  root.style.setProperty('--body-font-line-height', preferences.bodyFont.lineHeight)
+  root.style.setProperty("--body-font-family", preferences.bodyFont.family);
+  root.style.setProperty("--body-font-size", preferences.bodyFont.size);
+  root.style.setProperty("--body-font-weight", preferences.bodyFont.weight);
+  root.style.setProperty("--body-font-line-height", preferences.bodyFont.lineHeight);
 
-  root.style.setProperty('--bg-color', preferences.bgColor)
-  root.style.setProperty('--accent-color', preferences.accentColor)
-  root.style.setProperty('--hide-images', preferences.hideImages ? 'none' : 'initial')
-  root.style.setProperty('--compact-mode', preferences.compactMode ? '1' : '0')
-}
+  root.style.setProperty("--bg-color", preferences.bgColor);
+  root.style.setProperty("--accent-color", preferences.accentColor);
+  root.style.setProperty("--hide-images", preferences.hideImages ? "none" : "initial");
+  root.style.setProperty("--compact-mode", preferences.compactMode ? "1" : "0");
+};
 
 const loadPreferences = () => {
-  const saved = localStorage.getItem('musicHubPreferences')
+  const saved = localStorage.getItem("musicHubPreferences");
   if (saved) {
     try {
-      Object.assign(preferences, JSON.parse(saved))
+      Object.assign(preferences, JSON.parse(saved));
     } catch (error) {
-      console.error('Failed to load preferences:', error)
+      console.error("Failed to load preferences:", error);
     }
   }
-  applyPreferences()
-}
+  applyPreferences();
+};
 
 // Lifecycle
 onMounted(() => {
-  loadPreferences()
-})
+  loadPreferences();
+});
 </script>
 
 <style scoped>
@@ -524,9 +532,9 @@ onMounted(() => {
 }
 
 .tab-btn.active {
-  background: rgba(29, 185, 84, 0.1);
-  color: #1db954;
-  border-right: 2px solid #1db954;
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border-right: 2px solid var(--color-accent);
 }
 
 .tab-btn svg {
@@ -594,8 +602,8 @@ onMounted(() => {
 
 .setting-input:focus {
   outline: none;
-  border-color: #1db954;
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle2);
 }
 
 .color-input-group {
@@ -633,7 +641,7 @@ onMounted(() => {
   appearance: none;
   width: 16px;
   height: 16px;
-  background: #1db954;
+  background: var(--color-accent);
   border-radius: 50%;
   cursor: pointer;
 }
@@ -666,12 +674,12 @@ onMounted(() => {
 }
 
 .checkbox-input:checked + .checkbox-custom {
-  background: #1db954;
-  border-color: #1db954;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .checkbox-input:checked + .checkbox-custom::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 5px;
   top: 2px;

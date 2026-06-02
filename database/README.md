@@ -11,10 +11,12 @@ This directory contains the database schema and migration files for the Music Hu
 3. Run the migrations in order:
    - First: `001_comprehensive_schema.sql`
    - Second: `002_rls_policies.sql`
+   - Third: `003_storage_bootstrap.sql` (temporary bootstrap policies for iOS/web uploads)
 
 ### 2. Set up Storage Buckets
 
-In the Supabase dashboard, go to Storage and create the following buckets:
+`003_storage_bootstrap.sql` now creates/upserts these buckets automatically.
+If you prefer to create manually in dashboard, use:
 
 1. **media** (Private bucket for audio/video/documents)
    - Create bucket with name: `media`
@@ -30,7 +32,8 @@ In the Supabase dashboard, go to Storage and create the following buckets:
 
 ### 3. Configure Storage Policies
 
-After creating the buckets, run the following policies in the SQL Editor:
+`003_storage_bootstrap.sql` applies bootstrap storage + media table policies automatically.
+Use the SQL block below only if you need to apply policies manually:
 
 ```sql
 -- Media bucket policies (private by default)
@@ -38,13 +41,13 @@ CREATE POLICY "Users can view media they have access to" ON storage.objects FOR 
     bucket_id = 'media' AND (
         EXISTS (
             SELECT 1 FROM media m
-            JOIN artist_team at ON m.artist_id = at.artist_id 
-            WHERE m.file_path = name 
+            JOIN artist_team at ON m.artist_id = at.artist_id
+            WHERE m.file_path = name
             AND at.user_id = auth.uid()
-        ) OR 
+        ) OR
         EXISTS (
-            SELECT 1 FROM media m 
-            WHERE m.file_path = name 
+            SELECT 1 FROM media m
+            WHERE m.file_path = name
             AND m.is_public = true
         )
     )
@@ -58,8 +61,8 @@ CREATE POLICY "Team members can delete their media" ON storage.objects FOR DELET
     bucket_id = 'media' AND (
         EXISTS (
             SELECT 1 FROM media m
-            JOIN artist_team at ON m.artist_id = at.artist_id 
-            WHERE m.file_path = name 
+            JOIN artist_team at ON m.artist_id = at.artist_id
+            WHERE m.file_path = name
             AND at.user_id = auth.uid()
             AND at.role IN ('owner', 'editor')
         )
@@ -117,6 +120,7 @@ CREATE POLICY "Team members can delete covers" ON storage.objects FOR DELETE USI
 ### Row Level Security (RLS)
 
 All tables have RLS enabled with policies that enforce:
+
 - Users can only access data for artists they're team members of
 - Role-based permissions for create/update/delete operations
 - Public content can be viewed by anyone
@@ -145,7 +149,7 @@ profiles
 artists
     ↓ (1:many)
 ├── media
-├── events  
+├── events
 ├── notes
 ├── moodboard_items
 ├── timeline_events

@@ -1,27 +1,29 @@
 <template>
-  <div 
+  <div
     ref="containerRef"
     :class="[
       'optimized-image',
       {
         'optimized-image--loading': isLoading,
         'optimized-image--error': hasError,
-        'optimized-image--loaded': isLoaded
-      }
+        'optimized-image--loaded': isLoaded,
+      },
     ]"
     :style="containerStyle"
   >
     <!-- Loading placeholder -->
-    <div v-if="isLoading" class="optimized-image__placeholder">
+    <div v-if="isLoading && !hasError" class="optimized-image__placeholder">
       <div class="optimized-image__skeleton"></div>
     </div>
 
     <!-- Error state -->
-    <div v-else-if="hasError" class="optimized-image__error">
+    <div v-if="hasError" class="optimized-image__error">
       <slot name="error">
         <div class="optimized-image__error-content">
           <svg viewBox="0 0 24 24" fill="currentColor" class="optimized-image__error-icon">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            <path
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+            />
           </svg>
           <span class="optimized-image__error-text">Failed to load image</span>
         </div>
@@ -29,22 +31,13 @@
     </div>
 
     <!-- Image element -->
-    <picture v-if="!isLoading && !hasError && (loading === 'eager' || isIntersecting)">
+    <picture v-if="!hasError && (loading === 'eager' || isIntersecting)">
       <!-- WebP sources for different screen sizes -->
-      <source 
-        v-if="shouldUseWebP"
-        :srcset="webpSrcSet"
-        :sizes="sizes"
-        type="image/webp"
-      />
-      
+      <source v-if="shouldUseWebP" :srcset="webpSrcSet" :sizes="sizes" type="image/webp" />
+
       <!-- Fallback JPEG/PNG sources -->
-      <source 
-        :srcset="fallbackSrcSet"
-        :sizes="sizes"
-        :type="fallbackMimeType"
-      />
-      
+      <source :srcset="fallbackSrcSet" :sizes="sizes" :type="fallbackMimeType" />
+
       <!-- Main image element -->
       <img
         ref="imageRef"
@@ -54,8 +47,8 @@
         :class="[
           'optimized-image__img',
           {
-            'optimized-image__img--fade-in': fadeIn && isLoaded
-          }
+            'optimized-image__img--fade-in': fadeIn && isLoaded,
+          },
         ]"
         @load="handleLoad"
         @error="handleError"
@@ -70,224 +63,224 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { optimizeImageUrl, generateImageSrcSet, generateImageSizes } from '@/core/utils'
-import { IMAGE_CONFIG } from '@/core/constants'
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { optimizeImageUrl } from "@/core/utils";
+import { IMAGE_CONFIG } from "@/core/constants";
 
 const props = defineProps({
   src: {
     type: String,
-    required: true
+    required: true,
   },
   alt: {
     type: String,
-    required: true
+    required: true,
   },
   width: {
     type: Number,
-    default: undefined
+    default: undefined,
   },
   height: {
     type: Number,
-    default: undefined
+    default: undefined,
   },
   sizes: {
     type: String,
-    default: '100vw'
+    default: "100vw",
   },
   loading: {
     type: String,
-    default: 'lazy',
-    validator: (value) => ['lazy', 'eager'].includes(value)
+    default: "lazy",
+    validator: (value) => ["lazy", "eager"].includes(value),
   },
   quality: {
     type: Number,
     default: IMAGE_CONFIG.QUALITY,
-    validator: (value) => value >= 1 && value <= 100
+    validator: (value) => value >= 1 && value <= 100,
   },
   formats: {
     type: Array,
-    default: () => IMAGE_CONFIG.FORMATS
+    default: () => IMAGE_CONFIG.FORMATS,
   },
   aspectRatio: {
     type: String,
-    default: undefined
+    default: undefined,
   },
   objectFit: {
     type: String,
-    default: 'cover',
-    validator: (value) => ['cover', 'contain', 'fill', 'scale-down', 'none'].includes(value)
+    default: "cover",
+    validator: (value) => ["cover", "contain", "fill", "scale-down", "none"].includes(value),
   },
   fadeIn: {
     type: Boolean,
-    default: true
+    default: true,
   },
   placeholder: {
     type: String,
-    default: undefined
+    default: undefined,
   },
   blur: {
     type: Boolean,
-    default: false
+    default: false,
   },
   threshold: {
     type: String,
-    default: IMAGE_CONFIG.LAZY_LOADING_THRESHOLD
-  }
-})
+    default: IMAGE_CONFIG.LAZY_LOADING_THRESHOLD,
+  },
+});
 
-const emit = defineEmits(['load', 'error'])
+const emit = defineEmits(["load", "error"]);
 
 // Refs
-const containerRef = ref(null)
-const imageRef = ref(null)
-const isLoading = ref(true)
-const hasError = ref(false)
-const isLoaded = ref(false)
-const isIntersecting = ref(false)
+const containerRef = ref(null);
+const imageRef = ref(null);
+const isLoading = ref(true);
+const hasError = ref(false);
+const isLoaded = ref(false);
+const isIntersecting = ref(false);
 
 // Intersection Observer for lazy loading
-let observer = null
+let observer = null;
 
 // Computed properties
 const containerStyle = computed(() => {
-  const styles = {}
-  
-  if (props.width) styles.width = `${props.width}px`
-  if (props.height) styles.height = `${props.height}px`
-  if (props.aspectRatio) styles.aspectRatio = props.aspectRatio
-  
-  return styles
-})
+  const styles = {};
+
+  if (props.width) styles.width = `${props.width}px`;
+  if (props.height) styles.height = `${props.height}px`;
+  if (props.aspectRatio) styles.aspectRatio = props.aspectRatio;
+
+  return styles;
+});
 
 const shouldUseWebP = computed(() => {
-  return props.formats.includes('webp') && supportsWebP()
-})
+  return props.formats.includes("webp") && supportsWebP();
+});
 
 const responsiveSizes = computed(() => {
-  const sizes = [
-    IMAGE_CONFIG.THUMBNAIL_SIZE,
-    IMAGE_CONFIG.MEDIUM_SIZE,
-    IMAGE_CONFIG.LARGE_SIZE
-  ]
-  
+  const sizes = [IMAGE_CONFIG.THUMBNAIL_SIZE, IMAGE_CONFIG.MEDIUM_SIZE, IMAGE_CONFIG.LARGE_SIZE];
+
   if (props.width) {
     // Add the specific width and some variants
-    sizes.push(props.width, props.width * 2)
+    sizes.push(props.width, props.width * 2);
   }
-  
-  return [...new Set(sizes)].sort((a, b) => a - b)
-})
+
+  return [...new Set(sizes)].sort((a, b) => a - b);
+});
 
 const webpSrcSet = computed(() => {
-  if (!shouldUseWebP.value) return ''
-  
+  if (!shouldUseWebP.value) return "";
+
   return responsiveSizes.value
-    .map(size => {
+    .map((size) => {
       const url = optimizeImageUrl(props.src, {
         width: size,
         height: props.height ? Math.round((props.height / props.width) * size) : undefined,
         quality: props.quality,
-        format: 'webp'
-      })
-      return `${url} ${size}w`
+        format: "webp",
+      });
+      return `${url} ${size}w`;
     })
-    .join(', ')
-})
+    .join(", ");
+});
 
 const fallbackSrcSet = computed(() => {
-  const format = props.src.toLowerCase().includes('.png') ? 'png' : 'jpg'
-  
+  const format = props.src.toLowerCase().includes(".png") ? "png" : "jpg";
+
   return responsiveSizes.value
-    .map(size => {
+    .map((size) => {
       const url = optimizeImageUrl(props.src, {
         width: size,
         height: props.height ? Math.round((props.height / props.width) * size) : undefined,
         quality: props.quality,
-        format
-      })
-      return `${url} ${size}w`
+        format,
+      });
+      return `${url} ${size}w`;
     })
-    .join(', ')
-})
+    .join(", ");
+});
 
 const fallbackSrc = computed(() => {
-  const targetWidth = props.width || IMAGE_CONFIG.MEDIUM_SIZE
-  const format = props.src.toLowerCase().includes('.png') ? 'png' : 'jpg'
-  
+  const targetWidth = props.width || IMAGE_CONFIG.MEDIUM_SIZE;
+  const format = props.src.toLowerCase().includes(".png") ? "png" : "jpg";
+
   return optimizeImageUrl(props.src, {
     width: targetWidth,
     height: props.height,
     quality: props.quality,
-    format
-  })
-})
+    format,
+  });
+});
 
 const fallbackMimeType = computed(() => {
-  return props.src.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg'
-})
+  return props.src.toLowerCase().includes(".png") ? "image/png" : "image/jpeg";
+});
 
 // Methods
 const supportsWebP = () => {
   // Simple WebP support detection
-  const canvas = document.createElement('canvas')
-  canvas.width = 1
-  canvas.height = 1
-  return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0
-}
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  return canvas.toDataURL("image/webp").indexOf("data:image/webp") === 0;
+};
 
 const handleLoad = () => {
-  isLoading.value = false
-  isLoaded.value = true
-  hasError.value = false
-  emit('load')
-}
+  isLoading.value = false;
+  isLoaded.value = true;
+  hasError.value = false;
+  emit("load");
+};
 
 const handleError = (error) => {
-  isLoading.value = false
-  hasError.value = true
-  isLoaded.value = false
-  emit('error', error)
-}
+  isLoading.value = false;
+  hasError.value = true;
+  isLoaded.value = false;
+  emit("error", error);
+};
 
 const setupIntersectionObserver = () => {
-  if (props.loading !== 'lazy' || !containerRef.value || typeof IntersectionObserver === 'undefined') {
-    isIntersecting.value = true
-    return
+  if (
+    props.loading !== "lazy" ||
+    !containerRef.value ||
+    typeof IntersectionObserver === "undefined"
+  ) {
+    isIntersecting.value = true;
+    return;
   }
-  
+
   observer = new IntersectionObserver(
     (entries) => {
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          isIntersecting.value = true
-          observer?.disconnect()
+          isIntersecting.value = true;
+          observer?.disconnect();
         }
-      })
+      });
     },
     {
       rootMargin: props.threshold,
-      threshold: 0.1
-    }
-  )
-  
-  observer.observe(containerRef.value)
-}
+      threshold: 0.1,
+    },
+  );
+
+  observer.observe(containerRef.value);
+};
 
 // Lifecycle
 onMounted(async () => {
-  await nextTick()
-  
-  if (props.loading === 'lazy') {
-    setupIntersectionObserver()
+  await nextTick();
+
+  if (props.loading === "lazy") {
+    setupIntersectionObserver();
   } else {
-    isIntersecting.value = true
+    isIntersecting.value = true;
   }
-})
+});
 
 onUnmounted(() => {
-  observer?.disconnect()
-})
+  observer?.disconnect();
+});
 </script>
 
 <style scoped>
@@ -357,7 +350,7 @@ onUnmounted(() => {
 .optimized-image__img {
   width: 100%;
   height: 100%;
-  object-fit: v-bind('props.objectFit');
+  object-fit: v-bind("props.objectFit");
   transition: opacity 0.3s ease;
 }
 

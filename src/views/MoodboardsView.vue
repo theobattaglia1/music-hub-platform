@@ -1,747 +1,894 @@
 <template>
-  <div class="moodboards-view">
-    <!-- Header -->
-    <div class="view-header">
-      <div class="header-background"></div>
-      <div class="header-content">
-        <div class="title-section">
-          <h1 class="view-title">
-            <span class="title-main">Moodboards</span>
-            <span class="title-count">{{ moodboards.length }}</span>
-          </h1>
-          <p class="view-subtitle">Visual collaboration for creative inspiration</p>
-        </div>
-        <button class="create-btn" @click="createMoodboard">
-          <div class="btn-bg"></div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>New Moodboard</span>
-        </button>
-      </div>
-    </div>
+  <WorkspacePage
+    class="moodboards-view"
+    artist-scoped-header
+    eyebrow="Creative Workspace"
+    title="Moodboards"
+    :count="filteredMoodboards.length"
+    subtitle="Build living visual boards, then open them into a working canvas editor."
+  >
+    <template #actions>
+      <button class="workspace-header-primary-btn" @click="showCreateModal = true">
+        New Moodboard
+      </button>
+    </template>
 
-    <!-- Controls -->
-    <div class="controls-section">
+    <template #stats>
+      <article class="stat-card">
+        <span>Boards</span>
+        <strong>{{ filteredMoodboards.length }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Linked Assets</span>
+        <strong>{{ linkedAssetCount }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Total Items</span>
+        <strong>{{ totalItemCount }}</strong>
+      </article>
+    </template>
+
+    <template #toolbar>
       <div class="search-container">
-        <div class="search-wrapper">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+        <label class="search-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
           <input
             v-model="searchQuery"
+            class="search-input"
             type="text"
             placeholder="Search moodboards..."
-            class="search-input"
           />
-        </div>
+        </label>
       </div>
 
-      <div class="filter-group">
-        <div class="custom-select">
-          <select v-model="sortBy" class="filter-select">
-            <option value="recent">Recently Updated</option>
-            <option value="name">Name</option>
-            <option value="created">Date Created</option>
-          </select>
-        </div>
-      </div>
-    </div>
+      <label class="sort-field">
+        <span>Sort</span>
+        <select v-model="sortBy">
+          <option value="recent">Recently Updated</option>
+          <option value="name">Name</option>
+          <option value="created">Created</option>
+        </select>
+      </label>
+    </template>
 
-    <!-- Moodboards Grid -->
-    <div v-if="filteredMoodboards.length > 0" class="moodboards-container">
-      <div class="moodboards-grid">
-        <div
-          v-for="moodboard in filteredMoodboards"
-          :key="moodboard.id"
-          class="moodboard-card"
-          @click="openMoodboard(moodboard)"
-        >
-          <div class="moodboard-preview">
-            <div class="preview-canvas">
+    <section class="moodboard-grid" @contextmenu.prevent="openWorkspaceMenu">
+      <article
+        v-for="board in filteredMoodboards"
+        :key="board.id"
+        class="moodboard-card"
+        @click="openMoodboard(board)"
+        @contextmenu.prevent.stop="openMoodboardMenu(board, $event)"
+      >
+        <div class="card-preview">
+          <div class="preview-canvas">
+            <div
+              v-for="(item, index) in board.preview_items"
+              :key="`${board.id}-${index}`"
+              class="preview-item"
+              :class="item.type"
+              :style="previewStyle(item)"
+            >
+              <img v-if="item.type === 'image'" :src="item.src" :alt="item.alt" />
+              <div v-else-if="item.type === 'asset'" class="preview-asset">
+                <span>{{ item.content || "Linked asset" }}</span>
+              </div>
               <div
-                v-for="(item, index) in moodboard.preview_items"
-                :key="index"
-                class="preview-item"
-                :style="{ 
-                  left: item.x + '%', 
-                  top: item.y + '%',
-                  width: item.width + '%',
-                  height: item.height + '%'
-                }"
+                v-else-if="item.type === 'text'"
+                class="preview-text"
+                :style="{ color: item.color }"
               >
-                <img v-if="item.type === 'image'" :src="item.src" :alt="item.alt" />
-                <div v-else-if="item.type === 'text'" class="text-item" :style="{ color: item.color }">
-                  {{ item.content }}
-                </div>
-                <div v-else-if="item.type === 'color'" class="color-item" :style="{ backgroundColor: item.color }"></div>
+                {{ item.content }}
               </div>
+              <div v-else class="preview-color" :style="{ background: item.color }"></div>
             </div>
-          </div>
-
-          <div class="moodboard-details">
-            <h3 class="moodboard-title">{{ moodboard.title }}</h3>
-            <div class="moodboard-meta">
-              <span class="item-count">{{ moodboard.item_count }} items</span>
-              <span class="last-updated">{{ formatDate(moodboard.updated_at) }}</span>
-            </div>
-            
-            <div v-if="moodboard.collaborators?.length > 0" class="collaborators">
-              <div
-                v-for="(collaborator, idx) in moodboard.collaborators.slice(0, 3)"
-                :key="`${moodboard.id}-${collaborator.id}`"
-                class="collaborator-avatar"
-                :style="{ '--index': idx }"
-                :title="collaborator.name"
-              >
-                <img v-if="collaborator.avatar" :src="collaborator.avatar" :alt="collaborator.name" />
-                <span v-else>{{ collaborator.name?.charAt(0) }}</span>
-              </div>
-              <div v-if="moodboard.collaborators.length > 3" class="collaborator-more">
-                +{{ moodboard.collaborators.length - 3 }}
-              </div>
-            </div>
-          </div>
-
-          <div class="moodboard-actions">
-            <button class="action-btn" @click.stop="shareMoodboard(moodboard)">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92S19.61 16.08 18 16.08z"/>
-              </svg>
-            </button>
-            <button class="action-btn" @click.stop="duplicateMoodboard(moodboard)">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-              </svg>
-            </button>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="empty-state">
-      <div class="empty-illustration">
-        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="40" width="120" height="120" rx="8" stroke="currentColor" stroke-width="2" opacity="0.2"/>
-          <rect x="60" y="60" width="30" height="20" rx="4" fill="currentColor" opacity="0.3"/>
-          <rect x="100" y="60" width="40" height="30" rx="4" fill="currentColor" opacity="0.2"/>
-          <rect x="60" y="100" width="25" height="25" rx="4" fill="currentColor" opacity="0.4"/>
-          <rect x="95" y="105" width="45" height="15" rx="4" fill="currentColor" opacity="0.25"/>
-        </svg>
+        <div class="card-meta">
+          <div>
+            <h2>{{ board.title }}</h2>
+            <p>{{ board.description }}</p>
+          </div>
+          <button class="ghost-btn" @click.stop="openMoodboard(board)">Open</button>
+        </div>
+
+        <div class="card-footer">
+          <span>{{ board.item_count }} items</span>
+          <span>{{ formatRelativeDate(board.updated_at) }}</span>
+        </div>
+      </article>
+
+      <div v-if="filteredMoodboards.length === 0" class="empty-state">
+        <h2>{{ searchQuery ? "No moodboards match this search" : "No moodboards yet" }}</h2>
+        <p>
+          {{
+            searchQuery
+              ? "Try a broader name or create a new board."
+              : "Create a board and start arranging images, text, and colors."
+          }}
+        </p>
+        <button class="create-btn" @click="showCreateModal = true">Create Moodboard</button>
       </div>
-      <h3 class="empty-title">{{ searchQuery ? 'No moodboards found' : 'Create your first moodboard' }}</h3>
-      <p class="empty-text">
-        {{ searchQuery ? 'Try adjusting your search terms' : 'Start collecting visual inspiration and ideas' }}
-      </p>
-      <button v-if="!searchQuery" class="create-btn large" @click="createMoodboard">
-        <div class="btn-bg"></div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span>Create Moodboard</span>
-      </button>
-    </div>
-  </div>
+    </section>
+
+    <teleport to="body">
+      <transition name="fade">
+        <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
+          <div class="modal-card">
+            <div class="modal-head">
+              <h2>Create Moodboard</h2>
+              <button class="close-btn" @click="showCreateModal = false">×</button>
+            </div>
+
+            <form class="modal-form" @submit.prevent="createMoodboard">
+              <label>
+                <span>Title</span>
+                <input
+                  v-model="draftBoard.title"
+                  type="text"
+                  placeholder="Campaign references"
+                  required
+                />
+              </label>
+              <label>
+                <span>Description</span>
+                <textarea
+                  v-model="draftBoard.description"
+                  rows="3"
+                  placeholder="What this board is collecting..."
+                ></textarea>
+              </label>
+              <div class="modal-actions">
+                <button type="button" class="ghost-btn" @click="showCreateModal = false">
+                  Cancel
+                </button>
+                <button type="submit" class="create-btn">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="showRenameModal" class="modal-overlay" @click.self="closeRenameModal">
+          <div class="modal-card">
+            <div class="modal-head">
+              <h2>Rename Moodboard</h2>
+              <button class="close-btn" @click="closeRenameModal">×</button>
+            </div>
+
+            <form class="modal-form" @submit.prevent="submitRenameMoodboard">
+              <label>
+                <span>Title</span>
+                <input
+                  v-model="renameBoardTitle"
+                  type="text"
+                  placeholder="Moodboard title"
+                  required
+                />
+              </label>
+              <div class="modal-actions">
+                <button type="button" class="ghost-btn" @click="closeRenameModal">Cancel</button>
+                <button type="submit" class="create-btn">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
+          <div class="modal-card">
+            <div class="modal-head">
+              <h2>Delete Moodboard</h2>
+              <button class="close-btn" @click="closeDeleteModal">×</button>
+            </div>
+
+            <div class="confirm-copy">
+              <strong>{{ activeBoard?.title }}</strong>
+              <p>This removes the board and its current layout from the workspace.</p>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="ghost-btn" @click="closeDeleteModal">Cancel</button>
+              <button type="button" class="danger-btn" @click="confirmDeleteMoodboard">
+                Delete Moodboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+  </WorkspacePage>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue'
-import { apiService } from '@/shared/services/api'
+import { computed, inject, onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useMoodboardsStore } from "@/stores/moodboards";
+import { useDashboardStore } from "@/stores/dashboard";
+import WorkspacePage from "@/components/layout/WorkspacePage.vue";
 
-const showToast = inject('showToast', () => {})
+const router = useRouter();
+const route = useRoute();
+const moodboardsStore = useMoodboardsStore();
+const dashboardStore = useDashboardStore();
+const showContextMenu = inject("showContextMenu", () => {});
+const showToast = inject("showToast", () => {});
 
-// State
-const moodboards = ref([])
-const searchQuery = ref('')
-const sortBy = ref('recent')
+const searchQuery = ref("");
+const sortBy = ref("recent");
+const showCreateModal = ref(false);
+const showRenameModal = ref(false);
+const showDeleteModal = ref(false);
+const activeBoard = ref(null);
+const renameBoardTitle = ref("");
+const draftBoard = reactive({
+  title: "",
+  description: "",
+});
+const scopedArtistSlug = computed(() =>
+  typeof route.query.artist === "string" ? route.query.artist : "",
+);
+const scopedArtist = computed(() =>
+  (dashboardStore.artists || []).find(
+    (artist) => artist.slug === scopedArtistSlug.value || String(artist.id) === scopedArtistSlug.value,
+  ) || null,
+);
+const totalItemCount = computed(() =>
+  filteredMoodboards.value.reduce(
+    (sum, board) => sum + (board.item_count || board.items?.length || 0),
+    0,
+  ),
+);
+const linkedAssetCount = computed(() =>
+  filteredMoodboards.value.reduce((sum, board) => {
+    const items = board.items || board.preview_items || [];
+    return sum + items.filter((item) => item.type === "asset").length;
+  }, 0),
+);
 
-// Mock data
-const mockMoodboards = [
-  {
-    id: 'mood-1',
-    title: 'Album Aesthetic',
-    item_count: 12,
-    updated_at: new Date(Date.now() - 3600000).toISOString(),
-    collaborators: [
-      { id: 'user-1', name: 'Alex Smith', avatar: 'https://ui-avatars.com/api/?name=Alex+Smith&background=6366f1&color=fff&size=32' },
-      { id: 'user-2', name: 'Sam Johnson', avatar: null }
-    ],
-    preview_items: [
-      { type: 'image', src: 'https://ui-avatars.com/api/?name=Preview&background=a855f7&color=fff&size=100', x: 10, y: 15, width: 35, height: 25 },
-      { type: 'color', color: '#a855f7', x: 55, y: 10, width: 20, height: 15 },
-      { type: 'text', content: 'NEON VIBES', color: '#22c55e', x: 15, y: 50, width: 40, height: 10 },
-      { type: 'image', src: 'https://ui-avatars.com/api/?name=Art&background=22c55e&color=fff&size=80', x: 60, y: 40, width: 30, height: 35 }
-    ]
-  },
-  {
-    id: 'mood-2',
-    title: 'Tour Concepts',
-    item_count: 8,
-    updated_at: new Date(Date.now() - 7200000).toISOString(),
-    collaborators: [
-      { id: 'user-3', name: 'Jordan Lee', avatar: 'https://ui-avatars.com/api/?name=Jordan+Lee&background=ef4444&color=fff&size=32' }
-    ],
-    preview_items: [
-      { type: 'color', color: '#ef4444', x: 5, y: 5, width: 40, height: 30 },
-      { type: 'image', src: 'https://ui-avatars.com/api/?name=Stage&background=3b82f6&color=fff&size=120', x: 50, y: 20, width: 45, height: 40 },
-      { type: 'text', content: 'WORLD TOUR', color: '#ffffff', x: 10, y: 70, width: 50, height: 15 }
-    ]
-  },
-  {
-    id: 'mood-3',
-    title: 'Brand Identity',
-    item_count: 15,
-    updated_at: new Date(Date.now() - 14400000).toISOString(),
-    collaborators: [],
-    preview_items: [
-      { type: 'text', content: 'LOGO', color: '#000000', x: 20, y: 20, width: 25, height: 20 },
-      { type: 'color', color: '#f59e0b', x: 55, y: 15, width: 25, height: 25 },
-      { type: 'image', src: 'https://ui-avatars.com/api/?name=Brand&background=f59e0b&color=000&size=100', x: 25, y: 50, width: 35, height: 30 }
-    ]
-  }
-]
-
-// Computed
 const filteredMoodboards = computed(() => {
-  let result = [...moodboards.value]
+  let boards = [...moodboardsStore.boards];
 
-  // Search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(board =>
-      board.title.toLowerCase().includes(query)
-    )
+  if (scopedArtist.value) {
+    boards = boards.filter(
+      (board) => !board.artist_id || String(board.artist_id) === String(scopedArtist.value.id),
+    );
   }
 
-  // Sorting
-  result.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'name':
-        return a.title.localeCompare(b.title)
-      case 'recent':
-        return new Date(b.updated_at) - new Date(a.updated_at)
-      case 'created':
-        return new Date(b.created_at || b.updated_at) - new Date(a.created_at || a.updated_at)
-      default:
-        return 0
-    }
-  })
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.trim().toLowerCase();
+    boards = boards.filter(
+      (board) =>
+        board.title.toLowerCase().includes(query) ||
+        board.description.toLowerCase().includes(query),
+    );
+  }
 
-  return result
-})
+  boards.sort((a, b) => {
+    if (sortBy.value === "name") return a.title.localeCompare(b.title);
+    if (sortBy.value === "created") return new Date(b.created_at) - new Date(a.created_at);
+    return new Date(b.updated_at) - new Date(a.updated_at);
+  });
 
-// Methods
-const loadMoodboards = async () => {
+  return boards;
+});
+
+const previewStyle = (item) => ({
+  left: `${item.x}%`,
+  top: `${item.y}%`,
+  width: `${item.width}%`,
+  height: `${item.height}%`,
+});
+
+const formatRelativeDate = (value) => {
+  const diffHours = Math.floor((Date.now() - new Date(value).getTime()) / (1000 * 60 * 60));
+  if (diffHours < 1) return "Just now";
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const openMoodboard = (board) => {
+  router.push(`/moodboards/${board.id}`);
+};
+
+const createMoodboard = async () => {
+  const board = await moodboardsStore.createMoodboard({
+    title: draftBoard.title.trim(),
+    description: draftBoard.description.trim(),
+    artist_id: scopedArtist.value?.id || null,
+  });
+
+  draftBoard.title = "";
+  draftBoard.description = "";
+  showCreateModal.value = false;
+  showToast({ message: `Created ${board.title}`, type: "success" });
+  router.push(`/moodboards/${board.id}`);
+};
+
+const renameMoodboard = async (board) => {
+  activeBoard.value = board;
+  renameBoardTitle.value = board.title || "";
+  showRenameModal.value = true;
+};
+
+const duplicateMoodboard = async (board) => {
+  const duplicate = await moodboardsStore.duplicateMoodboard(board.id);
+  showToast({ message: `Duplicated ${board.title}`, type: "success" });
+  router.push(`/moodboards/${duplicate.id}`);
+};
+
+const deleteMoodboard = async (board) => {
+  activeBoard.value = board;
+  showDeleteModal.value = true;
+};
+
+const closeRenameModal = () => {
+  showRenameModal.value = false;
+  activeBoard.value = null;
+  renameBoardTitle.value = "";
+};
+
+const submitRenameMoodboard = async () => {
+  if (!activeBoard.value) return;
+  const title = renameBoardTitle.value.trim();
+  if (!title) return;
+  await moodboardsStore.renameMoodboard(activeBoard.value.id, title);
+  showToast({ message: `Renamed to ${title}`, type: "success" });
+  closeRenameModal();
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  activeBoard.value = null;
+};
+
+const confirmDeleteMoodboard = async () => {
+  if (!activeBoard.value) return;
+  const title = activeBoard.value.title;
+  await moodboardsStore.deleteMoodboard(activeBoard.value.id);
+  showToast({ message: `Deleted ${title}`, type: "success" });
+  closeDeleteModal();
+};
+
+const shareMoodboard = async (board) => {
+  const href = `${window.location.origin}${router.resolve(`/moodboards/${board.id}`).href}`;
   try {
-    const result = await apiService.getAll('moodboards')
-    moodboards.value = result.data?.length > 0 ? result.data : mockMoodboards
-  } catch (error) {
-    console.error('Failed to load moodboards:', error)
-    moodboards.value = mockMoodboards
+    await navigator.clipboard.writeText(href);
+    showToast({ message: "Moodboard link copied", type: "success" });
+  } catch {
+    showToast({ message: href, type: "info" });
   }
-}
+};
 
-const createMoodboard = () => {
-  const title = prompt('Enter moodboard title:')
-  if (title) {
-    const newMoodboard = {
-      id: `mood-${Date.now()}`,
-      title,
-      item_count: 0,
-      updated_at: new Date().toISOString(),
-      collaborators: [],
-      preview_items: []
-    }
-    moodboards.value.unshift(newMoodboard)
-    showToast({ message: `Created moodboard: ${title}`, type: 'success' })
-  }
-}
+const openMoodboardMenu = (board, event) => {
+  showContextMenu(
+    event,
+    [
+      { label: "Open Editor", handler: () => openMoodboard(board) },
+      { label: "Rename", handler: () => renameMoodboard(board) },
+      { label: "Duplicate", handler: () => duplicateMoodboard(board) },
+      { label: "Copy Link", handler: () => shareMoodboard(board) },
+      { separator: true },
+      { label: "Delete", destructive: true, handler: () => deleteMoodboard(board) },
+    ],
+    "custom",
+  );
+};
 
-const openMoodboard = (moodboard) => {
-  showToast({ message: `Opening ${moodboard.title} (Canvas editor coming soon)`, type: 'info' })
-}
+const openWorkspaceMenu = (event) => {
+  if (event.target.closest(".moodboard-card") || event.target.closest(".modal-card")) return;
 
-const shareMoodboard = (moodboard) => {
-  showToast({ message: `Sharing ${moodboard.title}`, type: 'info' })
-}
-
-const duplicateMoodboard = (moodboard) => {
-  const newMoodboard = {
-    ...moodboard,
-    id: `mood-${Date.now()}`,
-    title: `${moodboard.title} (Copy)`,
-    updated_at: new Date().toISOString()
-  }
-  moodboards.value.unshift(newMoodboard)
-  showToast({ message: `Duplicated ${moodboard.title}`, type: 'success' })
-}
-
-const formatDate = (isoString) => {
-  const date = new Date(isoString)
-  const now = new Date()
-  const diffMs = now - date
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString()
-}
+  showContextMenu(
+    event,
+    [
+      {
+        label: "New Moodboard",
+        handler: () => {
+          showCreateModal.value = true;
+        },
+      },
+      { separator: true },
+      {
+        label: "Sort by Recently Updated",
+        handler: () => {
+          sortBy.value = "recent";
+        },
+      },
+      {
+        label: "Sort by Name",
+        handler: () => {
+          sortBy.value = "name";
+        },
+      },
+      {
+        label: "Sort by Created",
+        handler: () => {
+          sortBy.value = "created";
+        },
+      },
+      { label: "Refresh", handler: () => moodboardsStore.loadMoodboards() },
+    ],
+    "custom",
+  );
+};
 
 onMounted(() => {
-  loadMoodboards()
-})
+  moodboardsStore.loadMoodboards();
+});
 </script>
 
 <style scoped>
 .moodboards-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #000;
-  color: white;
-  overflow: hidden;
+  color: #fff;
 }
 
-/* Header styles - reusing patterns */
-.view-header {
-  position: relative;
-  padding: 48px 48px 0;
-  margin-bottom: 32px;
+.create-btn,
+.ghost-btn,
+.danger-btn,
+.stat-card,
+.search-input,
+.sort-field select,
+.modal-form input,
+.modal-form textarea {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
 }
 
-.header-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 200%;
-  background: radial-gradient(ellipse at top, rgba(245, 158, 11, 0.15) 0%, transparent 50%);
-  pointer-events: none;
-  animation: pulse 20s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.1); }
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  position: relative;
-  z-index: 1;
-}
-
-.title-section {
-  flex: 1;
-}
-
-.view-title {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  font-size: 48px;
-  font-weight: 200;
-  letter-spacing: -0.02em;
-  margin: 0 0 8px;
-}
-
-.title-count {
-  font-size: 24px;
-  color: rgba(255, 255, 255, 0.3);
-  font-weight: 300;
-}
-
-.view-subtitle {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-.create-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 100px;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
+.create-btn,
+.ghost-btn,
+.danger-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
 }
 
-.create-btn.large {
-  padding: 16px 32px;
-  font-size: 16px;
-}
-
-.create-btn:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-}
-
-.btn-bg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
+.create-btn:hover,
+.ghost-btn:hover,
+.danger-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.create-btn:hover .btn-bg {
-  width: 200%;
-  height: 200%;
-}
-
-.create-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Controls */
-.controls-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 48px;
-  margin-bottom: 32px;
-  gap: 32px;
+.danger-btn {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
 }
 
 .search-container {
-  flex: 1;
-  max-width: 400px;
+  flex: 1 1 340px;
+  max-width: 520px;
 }
 
-.search-wrapper {
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 14px 48px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: rgba(255, 255, 255, 0.3);
-  pointer-events: none;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.custom-select {
-  position: relative;
-}
-
-.filter-select {
-  padding: 10px 40px 10px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  appearance: none;
-  transition: all 0.2s;
-  min-width: 140px;
-}
-
-.filter-select:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-/* Moodboards Container */
-.moodboards-container {
-  flex: 1;
-  padding: 0 48px 48px;
-  overflow-y: auto;
-}
-
-.moodboards-grid {
+.stat-card {
+  min-width: 154px;
+  padding: 12px 14px;
+  border-radius: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  gap: 4px;
+}
+
+.stat-card span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.stat-card strong {
+  font-size: 18px;
+  font-weight: 520;
+}
+
+.search-input,
+.sort-field select,
+.modal-form input,
+.modal-form textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+}
+
+.sort-field {
+  display: grid;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.sort-field select {
+  min-width: 180px;
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 0 12px;
+}
+
+.moodboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 18px;
+}
+
+.moodboard-card,
+.modal-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 }
 
 .moodboard-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease;
 }
 
 .moodboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-3px);
+  border-color: rgba(251, 191, 36, 0.34);
 }
 
-.moodboard-preview {
-  height: 200px;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-  position: relative;
-  overflow: hidden;
+.card-preview {
+  padding: 14px;
 }
 
 .preview-canvas {
   position: relative;
-  width: 100%;
-  height: 100%;
+  aspect-ratio: 16 / 11;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
 }
 
 .preview-item {
   position: absolute;
-  border-radius: 4px;
   overflow: hidden;
+  border-radius: 12px;
 }
 
-.preview-item img {
+.preview-item.image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 4px;
 }
 
-.text-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  font-weight: 700;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
-  height: 100%;
-}
-
-.color-item {
+.preview-text {
   width: 100%;
   height: 100%;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.moodboard-details {
-  padding: 20px;
+.preview-color {
+  width: 100%;
+  height: 100%;
 }
 
-.moodboard-title {
-  font-size: 18px;
-  font-weight: 500;
-  margin: 0 0 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.preview-asset {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: linear-gradient(180deg, rgba(232, 90, 25, 0.14), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.3;
 }
 
-.moodboard-meta {
+.card-meta,
+.card-footer,
+.modal-head,
+.modal-actions {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.card-meta {
+  padding: 0 16px 12px;
+}
+
+.card-meta h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 520;
+}
+
+.card-meta p,
+.card-footer,
+.empty-state p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.58);
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 16px;
+  line-height: 1.5;
 }
 
-.collaborators {
-  display: flex;
-  align-items: center;
-  gap: -8px;
+.card-footer {
+  padding: 0 16px 16px;
+  font-size: 12px;
 }
 
-.collaborator-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  margin-left: calc(var(--index) * -8px);
-  position: relative;
-  z-index: calc(10 - var(--index));
-}
-
-.collaborator-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.collaborator-more {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.5);
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  margin-left: -8px;
-}
-
-.moodboard-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.moodboard-card:hover .moodboard-actions {
-  opacity: 1;
-}
-
-.action-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.action-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.action-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Empty State */
 .empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
+  min-height: 280px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
   text-align: center;
+  padding: 32px;
 }
 
-.empty-illustration {
-  width: 200px;
-  height: 200px;
-  margin-bottom: 32px;
-  color: rgba(255, 255, 255, 0.1);
+.empty-state h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
 }
 
-.empty-title {
-  font-size: 28px;
-  font-weight: 300;
-  margin: 0 0 12px;
-  letter-spacing: -0.01em;
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
 }
 
-.empty-text {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0 0 32px;
-  max-width: 400px;
+.modal-card {
+  width: min(520px, calc(100vw - 32px));
+  padding: 18px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .view-header {
-    padding: 32px 24px 0;
+.modal-head h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.modal-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.modal-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.modal-form span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.modal-form input,
+.modal-form textarea {
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.confirm-copy {
+  margin-top: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.confirm-copy strong {
+  display: block;
+  font-size: 18px;
+}
+
+.confirm-copy p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+@media (max-width: 900px) {
+  .moodboards-view {
+    padding: 0;
   }
 
-  .header-content {
+  .card-meta,
+  .card-footer,
+  .modal-head,
+  .modal-actions {
     flex-direction: column;
-    gap: 24px;
+    align-items: stretch;
   }
 
-  .view-title {
-    font-size: 36px;
-  }
-
-  .controls-section {
-    flex-direction: column;
-    padding: 0 24px;
-    gap: 16px;
-  }
-
-  .search-container {
-    max-width: none;
-  }
-
-  .moodboards-container {
-    padding: 0 24px 24px;
-  }
-
-  .moodboards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+  .search-container,
+  .sort-field select {
+    min-width: 100%;
   }
 }
 
-@media (max-width: 480px) {
-  .moodboards-grid {
-    grid-template-columns: 1fr;
-  }
+/* Theme override */
+.moodboards-view {
+  color: var(--color-text);
+}
+
+.stat-card,
+.search-input,
+.sort-field select,
+.modal-form input,
+.modal-form textarea {
+  border-color: var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.moodboard-card {
+  border-color: var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+
+.modal-card {
+  border-color: var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
+    var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-overlay);
+}
+
+.stat-card span,
+.card-meta p,
+.card-footer,
+.empty-state p,
+.modal-form span,
+.confirm-copy p,
+.close-btn {
+  color: var(--color-text-secondary);
+}
+
+.stat-card strong,
+.card-meta h2,
+.empty-state h2,
+.modal-head h2,
+.confirm-copy strong {
+  color: var(--color-text);
+}
+
+.search-icon {
+  color: var(--color-text-tertiary);
+}
+
+.search-input,
+.sort-field select,
+.modal-form input,
+.modal-form textarea {
+  color: var(--color-text);
+}
+
+.sort-field,
+.sort-field span {
+  color: var(--color-text-secondary);
+}
+
+.search-input::placeholder,
+.modal-form input::placeholder,
+.modal-form textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.create-btn,
+.ghost-btn,
+.danger-btn {
+  border-radius: 999px;
+  backdrop-filter: blur(18px);
+}
+
+.create-btn {
+  border: 1px solid rgba(19, 18, 17, 0.08);
+  background: rgba(19, 18, 17, 0.94);
+  color: var(--color-text-inverse);
+}
+
+.create-btn:hover {
+  background: rgba(19, 18, 17, 1);
+}
+
+.ghost-btn {
+  border-color: var(--color-border);
+  background: rgba(19, 18, 17, 0.04);
+  color: var(--color-text);
+}
+
+.ghost-btn:hover {
+  background: rgba(19, 18, 17, 0.08);
+}
+
+.danger-btn {
+  border-color: rgba(192, 57, 43, 0.18);
+  background: rgba(192, 57, 43, 0.08);
+  color: var(--color-danger);
+}
+
+.moodboard-card:hover {
+  border-color: rgba(200, 75, 17, 0.26);
+  box-shadow: 0 18px 42px rgba(19, 18, 17, 0.08);
+}
+
+.preview-canvas {
+  background:
+    radial-gradient(circle at top left, rgba(200, 75, 17, 0.12), transparent 40%),
+    linear-gradient(160deg, rgba(250, 250, 248, 0.95), rgba(237, 236, 233, 0.82));
+}
+
+.preview-item.text {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.preview-text {
+  color: var(--color-text) !important;
+}
+
+.preview-asset span {
+  color: var(--color-text-secondary);
+}
+
+.preview-asset {
+  background: linear-gradient(180deg, rgba(200, 75, 17, 0.12), rgba(255, 255, 255, 0.36));
+  border-color: rgba(200, 75, 17, 0.16);
+  color: var(--color-text);
+}
+
+.empty-state {
+  border-color: rgba(200, 75, 17, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.44)), transparent;
+}
+
+.modal-overlay {
+  background: rgba(19, 18, 17, 0.16);
+  backdrop-filter: blur(22px);
+}
+
+.modal-card {
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-overlay);
+}
+
+.confirm-copy {
+  border-color: rgba(192, 57, 43, 0.16);
+  background: rgba(192, 57, 43, 0.07);
 }
 </style>
